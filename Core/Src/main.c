@@ -21,6 +21,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "game.h"
+#include "max7219.h"
 
 /* USER CODE END Includes */
 
@@ -44,6 +46,7 @@ SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;
 
 TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim5;
 
 /* USER CODE BEGIN PV */
 
@@ -55,6 +58,7 @@ static void MX_GPIO_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_TIM2_Init(void);
+static void MX_TIM5_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -63,6 +67,12 @@ static void MX_TIM2_Init(void);
 /* USER CODE BEGIN 0 */
 uint8_t boardstate[8];
 uint8_t ledstate[8];
+struct Clock clock1;
+struct Clock clock2;
+struct Player player1;
+struct Player player2;
+struct GameState game;
+
 
 /* USER CODE END 0 */
 
@@ -97,7 +107,17 @@ int main(void)
   MX_SPI1_Init();
   MX_SPI2_Init();
   MX_TIM2_Init();
+  MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
+  //get clock and chip select ready
+  max7219_Turn_Off();
+  max7219_Turn_On();
+  max7219_Init(0xA);
+  max7219_Decode_On();
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
+
+
+
   //TODO: init SPI and what not
   for(int i = 0; i < 8; i++) {
     ledstate[i] = 0xA2;
@@ -110,13 +130,27 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  // TIM2->CR1 |= TIM_CR1_UDIS_Msk;
+  //initialize clocks properly
   TIM2->SR &= ~(TIM_SR_UIF_Msk);
-  // TIM2->EGR |= TIM_EGR_UG_Msk;
-  // TIM2->CR1 |= TIM_CR1_URS_Msk;
   TIM2->DIER |= 1;
 
-  HAL_TIM_Base_Start(&htim2);
+  TIM5->SR &= ~(TIM_SR_UIF_Msk);
+  TIM5->DIER |= 1;
+
+  // HAL_TIM_Base_Start(&htim2);
+
+
+  clock1 = (struct Clock){&htim2, 1, 0};
+  clock2 = (struct Clock){&htim5, 1, 0};
+
+  player1 = (struct Player){clock1, true};
+  player2 = (struct Player){clock2, false};
+
+  uint8_t board[8][8];
+  game = (struct GameState){&player1, &player1, &player2, false, ONE_MINUTE_LIMIT, false};
+  initTime(&game);
+
+
   while (1)
   {
     /* USER CODE END WHILE */
@@ -308,7 +342,7 @@ static void MX_TIM2_Init(void)
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = 1000;
   htim2.Init.CounterMode = TIM_COUNTERMODE_DOWN;
-  htim2.Init.Period = 10000;
+  htim2.Init.Period = 60000;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
@@ -329,6 +363,51 @@ static void MX_TIM2_Init(void)
   /* USER CODE BEGIN TIM2_Init 2 */
 
   /* USER CODE END TIM2_Init 2 */
+
+}
+
+/**
+  * @brief TIM5 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM5_Init(void)
+{
+
+  /* USER CODE BEGIN TIM5_Init 0 */
+
+  /* USER CODE END TIM5_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM5_Init 1 */
+
+  /* USER CODE END TIM5_Init 1 */
+  htim5.Instance = TIM5;
+  htim5.Init.Prescaler = 1000;
+  htim5.Init.CounterMode = TIM_COUNTERMODE_DOWN;
+  htim5.Init.Period = 60000;
+  htim5.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim5.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim5) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim5, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim5, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM5_Init 2 */
+
+  /* USER CODE END TIM5_Init 2 */
 
 }
 
@@ -355,8 +434,8 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pins : PA1 PA2 PA3 */
   GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PA4 PA9 PA10 */
@@ -380,6 +459,16 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   GPIO_InitStruct.Alternate = GPIO_AF10_OTG_FS;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI2_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI3_IRQn);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
