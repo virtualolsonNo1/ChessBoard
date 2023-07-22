@@ -43,6 +43,8 @@
 SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;
 
+TIM_HandleTypeDef htim2;
+
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -52,7 +54,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_SPI2_Init(void);
-void boardstateToLed();
+static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -94,6 +96,7 @@ int main(void)
   MX_GPIO_Init();
   MX_SPI1_Init();
   MX_SPI2_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   //TODO: init SPI and what not
   for(int i = 0; i < 8; i++) {
@@ -107,31 +110,57 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  // TIM2->CR1 |= TIM_CR1_UDIS_Msk;
+  TIM2->SR &= ~(TIM_SR_UIF_Msk);
+  // TIM2->EGR |= TIM_EGR_UG_Msk;
+  // TIM2->CR1 |= TIM_CR1_URS_Msk;
+  TIM2->DIER |= 1;
+
+  HAL_TIM_Base_Start(&htim2);
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    // de-assert and re-assert load to load values into registers
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
+    //TODO: USE THIS CODE TO CREATE CHESS LOGIC!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    //de-assert and re-assert load to load values into registers
+    // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
+    // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
 
-    HAL_SPI_Receive(&hspi1, (uint8_t *)boardstate, 8, 100000);
-    volatile int x = 8;
+    // HAL_SPI_Receive(&hspi1, (uint8_t *)boardstate, 8, 100000);
+    // volatile int x = 8;
 
 
-    boardstateToLed(&boardstate, &ledstate);
-
-    //send buffer to shift registers before sending their values to LEDs
-     volatile int test = HAL_SPI_Transmit(&hspi1, (uint8_t *)ledstate, 8, 10000);
-    while(!(SPI1->SR & 0b10)) {}
-
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
-    while(!(GPIOA->ODR & GPIO_PIN_10)) {}
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
-    while((GPIOA->ODR & GPIO_PIN_10)) {}
     
-    volatile int y = 8;
+    // boardstateToLed(&boardstate, &ledstate);
+
+    // //send buffer to shift registers before sending their values to LEDs
+    //  volatile int test = HAL_SPI_Transmit(&hspi1, (uint8_t *)ledstate, 8, 10000);
+    // while(!(SPI1->SR & 0b10)) {}
+
+    // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
+    // while(!(GPIOA->ODR & GPIO_PIN_10)) {}
+    // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
+    // while((GPIOA->ODR & GPIO_PIN_10)) {}
+    
+    // volatile int y = 8;
+    // for(int i = 0; i < 256; i++) {
+    //   for(int j = 0; j < 8; j++) {
+    //     // if(j == 4) {
+    //     //   ledstate[j] = i;
+    //     // } else {
+    //     //   ledstate[j] = 0;
+    //     // }
+    //     ledstate[j] = i;
+    //   }
+    //   volatile int test = HAL_SPI_Transmit(&hspi1, (uint8_t *)ledstate, 8, 10000);
+    //   while(!(SPI1->SR & 0b10)) {}
+
+    //    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
+    //   while(!(GPIOA->ODR & GPIO_PIN_10)) {}
+    //   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
+    //   while((GPIOA->ODR & GPIO_PIN_10)) {}
+    // }
   }
   /* USER CODE END 3 */
 }
@@ -255,6 +284,51 @@ static void MX_SPI2_Init(void)
   /* USER CODE BEGIN SPI2_Init 2 */
 
   /* USER CODE END SPI2_Init 2 */
+
+}
+
+/**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 1000;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_DOWN;
+  htim2.Init.Period = 10000;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
 
 }
 
