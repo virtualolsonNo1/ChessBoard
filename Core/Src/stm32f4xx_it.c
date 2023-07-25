@@ -20,6 +20,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f4xx_it.h"
+#include "game.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 /* USER CODE END Includes */
@@ -57,6 +58,7 @@
 /* External variables --------------------------------------------------------*/
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim5;
+extern struct GameState game;
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -205,11 +207,15 @@ void SysTick_Handler(void)
 void EXTI1_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI1_IRQn 0 */
-
+  HAL_TIM_Base_Stop(&htim5);
   /* USER CODE END EXTI1_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_1);
   /* USER CODE BEGIN EXTI1_IRQn 1 */
-
+  game.activePlayer = game.player1;
+  if(!game.gameStarted) {
+    game.gameStarted = true;
+  }
+  HAL_TIM_Base_Start(&htim2);
   /* USER CODE END EXTI1_IRQn 1 */
 }
 
@@ -223,6 +229,13 @@ void EXTI2_IRQHandler(void)
   /* USER CODE END EXTI2_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_2);
   /* USER CODE BEGIN EXTI2_IRQn 1 */
+  if(!game.gameStarted) {
+    changeTimeControl(&game);
+  } else {
+    HAL_TIM_Base_Stop(&htim2);
+    HAL_TIM_Base_Stop(&htim5);
+    resetGame(&game);
+  }
 
   /* USER CODE END EXTI2_IRQn 1 */
 }
@@ -233,10 +246,15 @@ void EXTI2_IRQHandler(void)
 void EXTI3_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI3_IRQn 0 */
-
+  HAL_TIM_Base_Stop(&htim2);
   /* USER CODE END EXTI3_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_3);
   /* USER CODE BEGIN EXTI3_IRQn 1 */
+  game.activePlayer = game.player2;
+  if(!game.gameStarted) {
+    game.gameStarted = true;
+  }
+  HAL_TIM_Base_Start(&htim5);
 
   /* USER CODE END EXTI3_IRQn 1 */
 }
@@ -252,8 +270,6 @@ void TIM2_IRQHandler(void)
   HAL_TIM_IRQHandler(&htim2);
   /* USER CODE BEGIN TIM2_IRQn 1 */
   HAL_TIM_Base_Stop(&htim2);
-  volatile int x = 2;
-  HAL_TIM_Base_Start(&htim2);
 
   /* USER CODE END TIM2_IRQn 1 */
 }
@@ -268,7 +284,7 @@ void TIM5_IRQHandler(void)
   /* USER CODE END TIM5_IRQn 0 */
   HAL_TIM_IRQHandler(&htim5);
   /* USER CODE BEGIN TIM5_IRQn 1 */
-
+  HAL_TIM_Base_Stop(&htim5);
   /* USER CODE END TIM5_IRQn 1 */
 }
 
