@@ -270,6 +270,7 @@ void TIM2_IRQHandler(void)
   HAL_TIM_IRQHandler(&htim2);
   /* USER CODE BEGIN TIM2_IRQn 1 */
   HAL_TIM_Base_Stop(&htim2);
+  game.gameStarted = false;
 
   /* USER CODE END TIM2_IRQn 1 */
 }
@@ -285,6 +286,7 @@ void TIM5_IRQHandler(void)
   HAL_TIM_IRQHandler(&htim5);
   /* USER CODE BEGIN TIM5_IRQn 1 */
   HAL_TIM_Base_Stop(&htim5);
+  game.gameStarted = false;
   /* USER CODE END TIM5_IRQn 1 */
 }
 
