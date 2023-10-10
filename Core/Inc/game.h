@@ -1,8 +1,6 @@
 #include "stdint.h"
 #include "stdbool.h"
 #include "stm32f4xx_hal.h"
-// #include "stm32f411xe.h"
-// #include "stm32f4xx_hal_tim.h"
 
 #define PLAYER1_MINUTES     DIGIT_4
 #define PLAYER1_SECONDS     DIGIT_2

@@ -207,10 +207,13 @@ void SysTick_Handler(void)
 void EXTI1_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI1_IRQn 0 */
+  //stop clock after button pressed
   HAL_TIM_Base_Stop(&htim5);
   /* USER CODE END EXTI1_IRQn 0 */
+  //clear flags associated with said interrupt so it doesn't repeatedly enter
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_1);
   /* USER CODE BEGIN EXTI1_IRQn 1 */
+  //since chess clock button pressed, change active player and start their clock
   game.activePlayer = game.player1;
   if(!game.gameStarted) {
     game.gameStarted = true;
@@ -227,10 +230,14 @@ void EXTI2_IRQHandler(void)
   /* USER CODE BEGIN EXTI2_IRQn 0 */
 
   /* USER CODE END EXTI2_IRQn 0 */
+  //clear flags associated with said interrupt so it doesn't repeatedly enter
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_2);
   /* USER CODE BEGIN EXTI2_IRQn 1 */
+  //if the game hasn't started and middle button pressed, change time control
   if(!game.gameStarted) {
     changeTimeControl(&game);
+
+    //otherwise, this signals the game being over, so stop the timers and reset the game
   } else {
     HAL_TIM_Base_Stop(&htim2);
     HAL_TIM_Base_Stop(&htim5);
@@ -246,10 +253,13 @@ void EXTI2_IRQHandler(void)
 void EXTI3_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI3_IRQn 0 */
+  //stop clock after button pressed
   HAL_TIM_Base_Stop(&htim2);
   /* USER CODE END EXTI3_IRQn 0 */
+  //clear flags associated with said interrupt so it doesn't repeatedly enter
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_3);
   /* USER CODE BEGIN EXTI3_IRQn 1 */
+  //since chess clock button pressed, change active player and start their clock
   game.activePlayer = game.player2;
   if(!game.gameStarted) {
     game.gameStarted = true;
@@ -267,8 +277,10 @@ void TIM2_IRQHandler(void)
   /* USER CODE BEGIN TIM2_IRQn 0 */
 
   /* USER CODE END TIM2_IRQn 0 */
+  //clear flags associated with said interrupt so it doesn't repeatedly enter
   HAL_TIM_IRQHandler(&htim2);
   /* USER CODE BEGIN TIM2_IRQn 1 */
+  //only enters this interrupt when time is up, so stop the clock and set gameStarted to false
   HAL_TIM_Base_Stop(&htim2);
   game.gameStarted = false;
 
@@ -283,8 +295,10 @@ void TIM5_IRQHandler(void)
   /* USER CODE BEGIN TIM5_IRQn 0 */
 
   /* USER CODE END TIM5_IRQn 0 */
+  //clear flags associated with said interrupt so it doesn't repeatedly enter
   HAL_TIM_IRQHandler(&htim5);
   /* USER CODE BEGIN TIM5_IRQn 1 */
+  //only enters this interrupt when time is up, so stop the clock and set gameStarted to false
   HAL_TIM_Base_Stop(&htim5);
   game.gameStarted = false;
   /* USER CODE END TIM5_IRQn 1 */

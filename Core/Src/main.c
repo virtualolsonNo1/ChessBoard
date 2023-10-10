@@ -102,9 +102,8 @@ void updateTime() {
         max7219_PrintNtos(minutesReg, minutes, 2);
         max7219_PrintNtos(secondsReg, secondsRemaining, 2);
     } 
-    // else if (secondsRemaining != game.activePlayer->clock.seconds) {
-    //     max7219_PrintNtos(secondsReg, secondsRemaining, 2);
-    // }
+
+    //if the game needs reset, properly do so
     if (game.resetNow) {
         game.resetNow = false;
         initTime(&game);
@@ -147,7 +146,7 @@ int main(void)
   MX_TIM2_Init();
   MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
-  //get clock and chip select ready
+  //properly set up 7 segment LCD
   max7219_Init(0xA);
   max7219_Decode_On();
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
@@ -166,24 +165,27 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  //initialize clocks properly
+
+  //initialize clocks properly, enabling proper interrupts
   TIM2->SR &= ~(TIM_SR_UIF_Msk);
   TIM2->DIER |= 1;
 
   TIM5->SR &= ~(TIM_SR_UIF_Msk);
   TIM5->DIER |= 1;
 
-  // HAL_TIM_Base_Start(&htim2);
-
-
+  //instantiate and properly initialize both players' clocks
   clock1 = (struct Clock){&htim2, 1, 0};
   clock2 = (struct Clock){&htim5, 1, 0};
 
+  //instantiate and properly initialize both players
   player1 = (struct Player){clock1, true};
   player2 = (struct Player){clock2, false};
 
+  //create buffer to store state of board and initialize game struct
   uint8_t board[8][8];
   game = (struct GameState){&player1, &player1, &player2, false, ONE_MINUTE_LIMIT, false};
+  
+  //display proper starting times for both players
   initTime(&game);
 
 
@@ -193,50 +195,50 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
+    //properly update display of each player's time
     updateTime();
 
 
 
 
-    //TODO: USE THIS CODE TO CREATE CHESS LOGIC!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    //de-assert and re-assert load to load values into registers
-    // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
-    // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
+    //de-assert and re-assert load pin to load values into register's D flip flops
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
 
-    // HAL_SPI_Receive(&hspi1, (uint8_t *)boardstate, 8, 100000);
-    // volatile int x = 8;
+    //transmit MISO data from shift registers into boardstate buffer
+    HAL_SPI_Receive(&hspi1, (uint8_t *)boardstate, 8, 100000);
+    volatile int x = 8;
 
+    //TODO: SEND HALL DATA OVER USB-C TO DESKTOP APP FOR CHESS LOGIC (in order to do so need 48Mhz crystal oscillator)
 
+    //convert hall data to LED order (as shift register wired up backwards for hall vs LED)
+    boardstateToLed(&boardstate, &ledstate);
+
+    //send buffer to shift registers before sending their values to LEDs
+     volatile int test = HAL_SPI_Transmit(&hspi1, (uint8_t *)ledstate, 8, 10000);
+    while(!(SPI1->SR & 0b10)) {}
+
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
+    while(!(GPIOA->ODR & GPIO_PIN_10)) {}
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
+    while((GPIOA->ODR & GPIO_PIN_10)) {}
     
-    // boardstateToLed(&boardstate, &ledstate);
+    volatile int y = 8;
 
-    // //send buffer to shift registers before sending their values to LEDs
-    //  volatile int test = HAL_SPI_Transmit(&hspi1, (uint8_t *)ledstate, 8, 10000);
-    // while(!(SPI1->SR & 0b10)) {}
+    //loop through to test LED's in binary fashion, testing all possible combinations
+    for(int i = 0; i < 256; i++) {
+      for(int j = 0; j < 8; j++) {
+        ledstate[j] = i;
+      }
+      volatile int test = HAL_SPI_Transmit(&hspi1, (uint8_t *)ledstate, 8, 10000);
+      while(!(SPI1->SR & 0b10)) {}
 
-    // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
-    // while(!(GPIOA->ODR & GPIO_PIN_10)) {}
-    // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
-    // while((GPIOA->ODR & GPIO_PIN_10)) {}
-    
-    // volatile int y = 8;
-    // for(int i = 0; i < 256; i++) {
-    //   for(int j = 0; j < 8; j++) {
-    //     // if(j == 4) {
-    //     //   ledstate[j] = i;
-    //     // } else {
-    //     //   ledstate[j] = 0;
-    //     // }
-    //     ledstate[j] = i;
-    //   }
-    //   volatile int test = HAL_SPI_Transmit(&hspi1, (uint8_t *)ledstate, 8, 10000);
-    //   while(!(SPI1->SR & 0b10)) {}
-
-    //    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
-    //   while(!(GPIOA->ODR & GPIO_PIN_10)) {}
-    //   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
-    //   while((GPIOA->ODR & GPIO_PIN_10)) {}
-    // }
+      //after transmitting LED data to shift registers, assert and de-assert load pin to display those values
+      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
+      while(!(GPIOA->ODR & GPIO_PIN_10)) {}
+      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
+      while((GPIOA->ODR & GPIO_PIN_10)) {}
+    }
   }
   /* USER CODE END 3 */
 }
