@@ -12,6 +12,11 @@
 - Since at the time, I had been working with an stm32f411 microcontroller for my project at work, I used this same microcontroller for this project as to further learn
 - Similarly, this was first implemented using FreeRTOS, as I was comparing FreeRTOS and Zephyr for another work project on an NXP dev board when it comes to speed, ease of day-to-day coding, implementation differences (preemptive prioritization and time slicing vs tickless, event driven RTOS defaulting to cooperative threading), etc., which was very easy to add using ST's CubeMX tool, but was later removed as it was unnecessary for this bare metal project
 
+# MY CODE VS LIBRARIES AND GENERATED CODE
+- STM32CubeMX was used for pin muxing and the initial setup of each peripheral, which is why any code between "//USER CODE END" and "//USER CODE BEGIN" is auto generated, and any code not put between the "//USER CODE BEGIN" and "//USER CODE END" comments will be removed if any updates are made on CubeMX and code is regenerated
+- Additionally, max7219.c and max7219.h were borrowed from tabur on github, with the only changes needed being the SPI peripheral and GPIO pin in the .h file in order to communicate with the 7-segment LCD I was using
+- Other than this, I wrote all of the code used in this code base
+
 # REMAINING TODOs
 - Because I forgot a 48Mhz crystall oscillator, I still need to order one, connect it properly to my PCB, and then output my hall data over USB-C
     - After this, I will need to write a python desktop app to process said data, but this should not be hard with python's numerous libraries, namely the python chess library, which I've used extensively before
