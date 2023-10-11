@@ -2,7 +2,7 @@
 - The purpose of this project was initially a rather simple one: my friends and I play A TON of chess over the board, and wanted to have a way to evaluate and learn from games afterwards without writing down our moves as we play.
 - In order to do so, a board to store the chess moves and a way of viewing this data visually later (as well as a chess engine's evaluation of each position) was necessary 
 
-# PERIPHERAlS USED
+# PERIPHERALS USED
 - In order to achieve this goal, hall effect sensors were used to capture data from magnetic pieces on the 64 squares. 
 - From there, shift registers are used to store the data and output it over a single serial wire using SPI, allowing for this data to be sent over USB-C (also how the board is powered) 
     - Sadly, I forgot to include a 48Mhz crystal oscillator in my PCB design, so I'm in the process of adding one to my board without another board spin, after which I will be able to write a desktop app to take my buffer of hall effect sensor data and translate it to chess logic using python
