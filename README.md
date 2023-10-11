@@ -23,3 +23,15 @@
     - Similarly, because speed is not a huge concern with something like this where human movement is the limiting factor, python will be plenty quick for this job despite being much, much slower than C
 - Additionally, I was having some power issues with the LEDs, where only the first 4 rows operated as intended, with the latter half being half lit up but not fully lit up or off. I resoldered all of the shift registers with new ICs, hooked up a logic analyzer to see if the correct data was going through, etc., and even had my boss who is an Electrical Engineer have a go at it, and nothing came of it, leading to the conclusion that there's most likely a power issue somewhere. 
     - This very well could be the case with 64 LEDs all being powered over USB-C, but a current limit was imposed on each LED using the shift registers for them, so this shouldn't be an issue, so I will have to do a board spin with just one row later, trying to figure out a better way to route power to each LED
+
+# USE CASE
+- Once finished, the chess board will function as follows:
+    - Current functionality: 
+        - once plugged in, chess clock will turn on, displaying default time control of 1:00 for each player
+        - if either of two outside push buttons are pressed, it will start the opponents timer, signifying that the first player made their move then hit the button
+        - if the middle button is pressed before the game starts it changes the time control. If the game has already started, it will reset the game so the players can start another one whenever they want
+        - during this time, the chess clock display will properly display the time control chosen or each player's time if the game has already started
+        - The hall effect data is stored in a buffer as well as the respective LED data to be sent to the LEDs
+    - Yet to be added functionality: 
+        - after each change in the state of the board buffer of the hall data, this data will be sent over USB-C to a python app that will display the pieces place on the board and the engine evaluation of the position
+        - When a piece is picked up, it's potential squares to be moved to will be lit up by the LEDs
