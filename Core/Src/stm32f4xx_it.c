@@ -20,9 +20,10 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f4xx_it.h"
-#include "game.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "game.h"
+#include "stm32f4xx.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -56,11 +57,11 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
+extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim5;
-extern struct GameState game;
 /* USER CODE BEGIN EV */
-
+extern struct GameState game;
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -210,7 +211,6 @@ void EXTI1_IRQHandler(void)
   //stop clock after button pressed
   HAL_TIM_Base_Stop(&htim5);
   /* USER CODE END EXTI1_IRQn 0 */
-  //clear flags associated with said interrupt so it doesn't repeatedly enter
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_1);
   /* USER CODE BEGIN EXTI1_IRQn 1 */
   //since chess clock button pressed, change active player and start their clock
@@ -230,7 +230,6 @@ void EXTI2_IRQHandler(void)
   /* USER CODE BEGIN EXTI2_IRQn 0 */
 
   /* USER CODE END EXTI2_IRQn 0 */
-  //clear flags associated with said interrupt so it doesn't repeatedly enter
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_2);
   /* USER CODE BEGIN EXTI2_IRQn 1 */
   //if the game hasn't started and middle button pressed, change time control
@@ -256,7 +255,6 @@ void EXTI3_IRQHandler(void)
   //stop clock after button pressed
   HAL_TIM_Base_Stop(&htim2);
   /* USER CODE END EXTI3_IRQn 0 */
-  //clear flags associated with said interrupt so it doesn't repeatedly enter
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_3);
   /* USER CODE BEGIN EXTI3_IRQn 1 */
   //since chess clock button pressed, change active player and start their clock
@@ -277,12 +275,15 @@ void TIM2_IRQHandler(void)
   /* USER CODE BEGIN TIM2_IRQn 0 */
 
   /* USER CODE END TIM2_IRQn 0 */
-  //clear flags associated with said interrupt so it doesn't repeatedly enter
   HAL_TIM_IRQHandler(&htim2);
   /* USER CODE BEGIN TIM2_IRQn 1 */
   //only enters this interrupt when time is up, so stop the clock and set gameStarted to false
   HAL_TIM_Base_Stop(&htim2);
-  game.gameStarted = false;
+  if(game.gameStarted) {
+    game.resetNow = true;
+    game.gameStarted = false;
+  }
+  
 
   /* USER CODE END TIM2_IRQn 1 */
 }
@@ -295,13 +296,29 @@ void TIM5_IRQHandler(void)
   /* USER CODE BEGIN TIM5_IRQn 0 */
 
   /* USER CODE END TIM5_IRQn 0 */
-  //clear flags associated with said interrupt so it doesn't repeatedly enter
   HAL_TIM_IRQHandler(&htim5);
   /* USER CODE BEGIN TIM5_IRQn 1 */
   //only enters this interrupt when time is up, so stop the clock and set gameStarted to false
   HAL_TIM_Base_Stop(&htim5);
-  game.gameStarted = false;
+  if(game.gameStarted) {
+    game.resetNow = true;
+    game.gameStarted = false;
+  }
   /* USER CODE END TIM5_IRQn 1 */
+}
+
+/**
+  * @brief This function handles USB On The Go FS global interrupt.
+  */
+void OTG_FS_IRQHandler(void)
+{
+  /* USER CODE BEGIN OTG_FS_IRQn 0 */
+
+  /* USER CODE END OTG_FS_IRQn 0 */
+  HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
+  /* USER CODE BEGIN OTG_FS_IRQn 1 */
+
+  /* USER CODE END OTG_FS_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */

@@ -18,11 +18,17 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "usb_device.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "game.h"
 #include "max7219.h"
+#include "stm32f4xx_hal.h"
+#include "usbd_cdc.h"
+#include "usb_device.h"
+#include "usbd_def.h"
+#include "string.h"
 
 /* USER CODE END Includes */
 
@@ -47,6 +53,7 @@ SPI_HandleTypeDef hspi2;
 
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim5;
+extern USBD_CDC_HandleTypeDef hUsbDeviceFS;
 
 /* USER CODE BEGIN PV */
 
@@ -106,6 +113,7 @@ void updateTime() {
     //if the game needs reset, properly do so
     if (game.resetNow) {
         game.resetNow = false;
+        resetGame(&game);
         initTime(&game);
     }
 }
@@ -145,6 +153,7 @@ int main(void)
   MX_SPI2_Init();
   MX_TIM2_Init();
   MX_TIM5_Init();
+  MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
   //properly set up 7 segment LCD
   max7219_Init(0xA);
@@ -209,36 +218,42 @@ int main(void)
     HAL_SPI_Receive(&hspi1, (uint8_t *)boardstate, 8, 100000);
     volatile int x = 8;
 
-    //TODO: SEND HALL DATA OVER USB-C TO DESKTOP APP FOR CHESS LOGIC (in order to do so need 48Mhz crystal oscillator)
+    //TODO: SEND HALL DATA OVER USB-C TO DESKTOP APP FOR CHESS LOGIC (in order to do so need  crystal oscillator)
 
+  //TODO: READD LED CODE ONCE THEY'RE WORKING! Will eventually need to get data back from app with what squares to light up when piece picked up
     //convert hall data to LED order (as shift register wired up backwards for hall vs LED)
-    boardstateToLed(&boardstate, &ledstate);
+    // boardstateToLed(&boardstate, &ledstate);
 
-    //send buffer to shift registers before sending their values to LEDs
-     volatile int test = HAL_SPI_Transmit(&hspi1, (uint8_t *)ledstate, 8, 10000);
-    while(!(SPI1->SR & 0b10)) {}
+    // //send buffer to shift registers before sending their values to LEDs
+    //  volatile int test = HAL_SPI_Transmit(&hspi1, (uint8_t *)ledstate, 8, 10000);
+    // while(!(SPI1->SR & 0b10)) {}
 
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
-    while(!(GPIOA->ODR & GPIO_PIN_10)) {}
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
-    while((GPIOA->ODR & GPIO_PIN_10)) {}
+    // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
+    // while(!(GPIOA->ODR & GPIO_PIN_10)) {}
+    // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
+    // while((GPIOA->ODR & GPIO_PIN_10)) {}
     
-    volatile int y = 8;
+    // volatile int y = 8;
 
     //loop through to test LED's in binary fashion, testing all possible combinations
-    for(int i = 0; i < 256; i++) {
-      for(int j = 0; j < 8; j++) {
-        ledstate[j] = i;
-      }
-      volatile int test = HAL_SPI_Transmit(&hspi1, (uint8_t *)ledstate, 8, 10000);
-      while(!(SPI1->SR & 0b10)) {}
+    // for(int i = 0; i < 256; i++) {
+    //   for(int j = 0; j < 8; j++) {
+    //     ledstate[j] = 0;
+    //   }
+    //   volatile int test = HAL_SPI_Transmit(&hspi1, (uint8_t *)ledstate, 8, 10000);
+    //   while(!(SPI1->SR & 0b10)) {}
 
-      //after transmitting LED data to shift registers, assert and de-assert load pin to display those values
-      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
-      while(!(GPIOA->ODR & GPIO_PIN_10)) {}
-      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
-      while((GPIOA->ODR & GPIO_PIN_10)) {}
-    }
+    //   //after transmitting LED data to shift registers, assert and de-assert load pin to display those values
+    //   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
+    //   while(!(GPIOA->ODR & GPIO_PIN_10)) {}
+    //   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
+    //   while((GPIOA->ODR & GPIO_PIN_10)) {}
+    // }
+
+    //TODO: update to send actual, semi-processed data later
+    char test[13] = "hello world\n";
+    CDC_Transmit_FS(test, sizeof(test));
+    
   }
   /* USER CODE END 3 */
 }
@@ -260,14 +275,13 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLM = 8;
-  RCC_OscInitStruct.PLL.PLLN = 64;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLM = 6;
+  RCC_OscInitStruct.PLL.PLLN = 96;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV6;
   RCC_OscInitStruct.PLL.PLLQ = 4;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
@@ -279,7 +293,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV64;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV2;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
@@ -384,7 +398,7 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 1000;
+  htim2.Init.Prescaler = 16000;
   htim2.Init.CounterMode = TIM_COUNTERMODE_DOWN;
   htim2.Init.Period = 60000;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -429,7 +443,7 @@ static void MX_TIM5_Init(void)
 
   /* USER CODE END TIM5_Init 1 */
   htim5.Instance = TIM5;
-  htim5.Init.Prescaler = 1000;
+  htim5.Init.Prescaler = 16000;
   htim5.Init.CounterMode = TIM_COUNTERMODE_DOWN;
   htim5.Init.Period = 60000;
   htim5.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -467,6 +481,7 @@ static void MX_GPIO_Init(void)
 /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
@@ -495,14 +510,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : PA11 PA12 */
-  GPIO_InitStruct.Pin = GPIO_PIN_11|GPIO_PIN_12;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-  GPIO_InitStruct.Alternate = GPIO_AF10_OTG_FS;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);

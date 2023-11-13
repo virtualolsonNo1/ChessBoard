@@ -86,14 +86,14 @@ void resetGame(struct GameState* game) {
     game->player2->clock.minutes = 1;
     game->player2->clock.seconds = 0;
     game->gameStarted = false;
-    game->resetNow = true;
+
+    minutes = 1;
+    secondsRemaining = 0;
 
     //reset ARR to correct value
     __HAL_TIM_SET_AUTORELOAD(game->player1->clock.timer, game->timeControl);
     __HAL_TIM_SET_AUTORELOAD(game->player2->clock.timer, game->timeControl);
     HAL_TIM_Base_Init(game->player1->clock.timer);
     HAL_TIM_Base_Init(game->player2->clock.timer);
-    minutes = 1;
-    secondsRemaining = 0;
     return;
 }
