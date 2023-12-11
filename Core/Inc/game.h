@@ -36,6 +36,15 @@ struct Player {
     bool isWhite;
 };
 
+struct MoveState {
+    bool firstPiecePickup;
+    bool secondPiecePickup;
+    bool isFinalState;
+    uint8_t firstPickupState[8][8];
+    uint8_t secondPickupState[8][8];
+    uint8_t finalState[8][8];
+};
+
 struct GameState {
     struct Player* activePlayer;
     struct Player* player1;
@@ -43,9 +52,15 @@ struct GameState {
     bool gameStarted;
     AllowedTimes timeControl;
     bool resetNow;
+    bool isWhiteMove;
+    struct MoveState* currentMove;
+    uint8_t previousState[8][8];
+    //TODO: might want to add back for error checking!!!
+    // char chessBoard[8][8];
+    uint8_t currentBoardState[8][8];
 };
 
 void initTime(struct GameState* game);
 void changeTimeControl(struct GameState* game);
-// void updateTime(struct GameState* game);
+void updateMoveShit(struct GameState* game);
 void resetGame(struct GameState* game);

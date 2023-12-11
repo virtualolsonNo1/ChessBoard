@@ -209,16 +209,22 @@ void EXTI1_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI1_IRQn 0 */
   //stop clock after button pressed
-  HAL_TIM_Base_Stop(&htim5);
-  /* USER CODE END EXTI1_IRQn 0 */
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_1);
-  /* USER CODE BEGIN EXTI1_IRQn 1 */
-  //since chess clock button pressed, change active player and start their clock
-  game.activePlayer = game.player1;
-  if(!game.gameStarted) {
-    game.gameStarted = true;
-  }
-  HAL_TIM_Base_Start(&htim2);
+    HAL_TIM_Base_Stop(&htim5);
+    /* USER CODE END EXTI1_IRQn 0 */
+    HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_1);
+    /* USER CODE BEGIN EXTI1_IRQn 1 */
+    //since chess clock button pressed, change active player and start their clock
+    if(game.activePlayer == game.player2) {
+      game.activePlayer = game.player1;
+      if(!game.gameStarted) {
+        // ASSUMED NORMAL ORIENTATION
+        game.isWhiteMove = true;
+        game.gameStarted = true;
+      } else {
+        game.currentMove->isFinalState = true;
+      }
+    }
+    HAL_TIM_Base_Start(&htim2);
   /* USER CODE END EXTI1_IRQn 1 */
 }
 
@@ -240,8 +246,10 @@ void EXTI2_IRQHandler(void)
   } else {
     HAL_TIM_Base_Stop(&htim2);
     HAL_TIM_Base_Stop(&htim5);
-    resetGame(&game);
+    game.gameStarted = false;
+    game.resetNow = true;
   }
+
 
   /* USER CODE END EXTI2_IRQn 1 */
 }
@@ -253,16 +261,24 @@ void EXTI3_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI3_IRQn 0 */
   //stop clock after button pressed
-  HAL_TIM_Base_Stop(&htim2);
-  /* USER CODE END EXTI3_IRQn 0 */
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_3);
-  /* USER CODE BEGIN EXTI3_IRQn 1 */
-  //since chess clock button pressed, change active player and start their clock
-  game.activePlayer = game.player2;
-  if(!game.gameStarted) {
-    game.gameStarted = true;
-  }
-  HAL_TIM_Base_Start(&htim5);
+    HAL_TIM_Base_Stop(&htim2);
+    /* USER CODE END EXTI3_IRQn 0 */
+    HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_3);
+    /* USER CODE BEGIN EXTI3_IRQn 1 */
+    if(game.activePlayer == game.player1) {
+      //since chess clock button pressed, change active player and start their clock
+      game.activePlayer = game.player2;
+      if(!game.gameStarted) {
+        //TODO: BACKWARDS BOARD, update later!!!!!!!
+        game.isWhiteMove = true;
+        game.gameStarted = true;
+        memcpy(&game.previousState, &game.currentBoardState, 8 * 8 * sizeof(game.previousState[0][0]));
+      } else {
+        game.currentMove->isFinalState = true;
+        game.isWhiteMove = !game.isWhiteMove;
+      }
+    }
+    HAL_TIM_Base_Start(&htim5);
 
   /* USER CODE END EXTI3_IRQn 1 */
 }

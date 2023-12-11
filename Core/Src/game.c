@@ -2,6 +2,7 @@
 #include "game.h"
 #include "max7219.h"
 #include "stm32f4xx_hal_tim.h"
+#include "string.h"
 
 void initTime(struct GameState* game) {
     //initialize the display with the starting time for both players
@@ -86,6 +87,20 @@ void resetGame(struct GameState* game) {
     game->player2->clock.minutes = 1;
     game->player2->clock.seconds = 0;
     game->gameStarted = false;
+    game->isWhiteMove = true;
+
+    //TODO: might wanna add back later for error checking!!!
+    // char newGame[8][8] = {
+    //     {'r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'},
+    //     {'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'},
+    //     {0, 0, 0, 0, 0, 0, 0, 0},
+    //     {0, 0, 0, 0, 0, 0, 0, 0},
+    //     {0, 0, 0, 0, 0, 0, 0, 0},
+    //     {0, 0, 0, 0, 0, 0, 0, 0},
+    //     {'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'},
+    //     {'R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'}
+    // };
+    // memcpy(&game->chessBoard, &newGame, 8 * 8 * sizeof(char));
 
     minutes = 1;
     secondsRemaining = 0;
@@ -96,4 +111,33 @@ void resetGame(struct GameState* game) {
     HAL_TIM_Base_Init(game->player1->clock.timer);
     HAL_TIM_Base_Init(game->player2->clock.timer);
     return;
+}
+
+void updateMoveShit(struct GameState* game) {
+    for(int i = 0; i < 8; i++) {
+        for(int j = 0; j < 8; j++) {
+            if(!game->currentMove->firstPiecePickup && game->previousState[i][j] == 1 && game->currentBoardState[i][j] == 0) {
+                //piece was picked up!!!
+                uint8_t temp [8][8];
+                memcpy(&temp, &game->previousState, 8 * 8 * sizeof(game->previousState[0][0]));
+                temp[i][j] = 0;
+                memcpy(&game->currentMove->firstPickupState, &temp, 8 * 8 * sizeof(temp[0][0]));
+                game->currentMove->firstPiecePickup = true;
+                //TODO: test if this code is fixed for picking up a piece, moving it over a square, then moving it to a different square
+            } else if(game->currentMove->firstPiecePickup && !game->currentMove->secondPiecePickup && !game->currentMove->isFinalState && game->currentMove->firstPickupState[i][j] == 1 && game->previousState[i][j] == 1 && game->currentBoardState[i][j] == 0) {
+                //piece is removed to be taken, save state!!!!!!
+                uint8_t temp [8][8];
+                memcpy(&temp, &game->previousState, 8 * 8 * sizeof(game->previousState[0][0]));
+                temp[i][j] = 0;
+                memcpy(&game->currentMove->secondPickupState, &temp, 8 * 8 * sizeof(temp[0][0]));
+                game->currentMove->secondPiecePickup = true;
+            } else if(game->currentMove->isFinalState) {
+                //button was hit to finish this move and change to other player's move, so save final state and update previous state to current state
+                memcpy(game->currentMove->finalState, game->currentBoardState, 8 * 8 * sizeof(game->currentMove->finalState[0][0]));
+                memcpy(game->previousState, game->currentBoardState, 8 * 8 * sizeof(game->previousState[0][0]));
+            }
+
+
+        }
+    }
 }

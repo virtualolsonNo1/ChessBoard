@@ -27,6 +27,7 @@
 #include "stm32f4xx_hal.h"
 #include "usbd_cdc.h"
 #include "usb_device.h"
+#include "usbd_cdc_if.h"
 #include "usbd_def.h"
 #include "string.h"
 
@@ -73,11 +74,13 @@ static void MX_TIM5_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 uint8_t boardstate[8];
+uint8_t boardstateArr[8][8];
 uint8_t ledstate[8];
 struct Clock clock1;
 struct Clock clock2;
 struct Player player1;
 struct Player player2;
+struct MoveState currentMove;
 struct GameState game;
 
 
@@ -111,6 +114,7 @@ void updateTime() {
     } 
 
     //if the game needs reset, properly do so
+    //TODO: this makes no logical sense to have in time shit, move to better spot later!!!!!!!
     if (game.resetNow) {
         game.resetNow = false;
         resetGame(&game);
@@ -190,9 +194,26 @@ int main(void)
   player1 = (struct Player){clock1, true};
   player2 = (struct Player){clock2, false};
 
+  //initialize currentMove
+  currentMove = (struct MoveState){false, false, false};
+
+  //initialize game
+  game = (struct GameState){&player1, &player1, &player2, false, ONE_MINUTE_LIMIT, false, false, &currentMove};
+
   //create buffer to store state of board and initialize game struct
-  uint8_t board[8][8];
-  game = (struct GameState){&player1, &player1, &player2, false, ONE_MINUTE_LIMIT, false};
+  //TODO: might want to add back later!!!
+  // char newGame[8][8] = {
+  //       {'r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'},
+  //       {'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'},
+  //       {0, 0, 0, 0, 0, 0, 0, 0},
+  //       {0, 0, 0, 0, 0, 0, 0, 0},
+  //       {0, 0, 0, 0, 0, 0, 0, 0},
+  //       {0, 0, 0, 0, 0, 0, 0, 0},
+  //       {'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'},
+  //       {'R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'}
+  //   };
+
+  // memcpy(&game.chessBoard, &newGame, 8 * 8 * sizeof(char));
   
   //display proper starting times for both players
   initTime(&game);
@@ -208,17 +229,30 @@ int main(void)
     updateTime();
 
 
-
-
     //de-assert and re-assert load pin to load values into register's D flip flops
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
 
     //transmit MISO data from shift registers into boardstate buffer
     HAL_SPI_Receive(&hspi1, (uint8_t *)boardstate, 8, 100000);
+
+    //turn received boardstate into 2d array instead of 1d array of uint8_t's
+    while((SPI1->SR & 0b1)) {}
+    
+    //constatntly store state of board in game so can be used when button is pressed
+    for(int i = 0; i < 8; i++) {
+      game.currentBoardState[i][0] = (0b10000000 & ~boardstate[i]) >> 7; 
+      game.currentBoardState[i][1] = (0b01000000 & ~boardstate[i]) >> 6; 
+      game.currentBoardState[i][2] = (0b00100000 & ~boardstate[i]) >> 5; 
+      game.currentBoardState[i][3] = (0b00010000 & ~boardstate[i]) >> 4; 
+      game.currentBoardState[i][4] = (0b00001000 & ~boardstate[i]) >> 3; 
+      game.currentBoardState[i][5] = (0b00000100 & ~boardstate[i]) >> 2; 
+      game.currentBoardState[i][6] = (0b00000010 & ~boardstate[i]) >> 1; 
+      game.currentBoardState[i][7] = (0b00000001 & ~boardstate[i]) >> 0; 
+
+    }
     volatile int x = 8;
 
-    //TODO: SEND HALL DATA OVER USB-C TO DESKTOP APP FOR CHESS LOGIC (in order to do so need  crystal oscillator)
 
   //TODO: READD LED CODE ONCE THEY'RE WORKING! Will eventually need to get data back from app with what squares to light up when piece picked up
     //convert hall data to LED order (as shift register wired up backwards for hall vs LED)
@@ -235,7 +269,7 @@ int main(void)
     
     // volatile int y = 8;
 
-    //loop through to test LED's in binary fashion, testing all possible combinations
+    // loop through to test LED's in binary fashion, testing all possible combinations
     // for(int i = 0; i < 256; i++) {
     //   for(int j = 0; j < 8; j++) {
     //     ledstate[j] = 0;
@@ -250,10 +284,101 @@ int main(void)
     //   while((GPIOA->ODR & GPIO_PIN_10)) {}
     // }
 
-    //TODO: update to send actual, semi-processed data later
-    char test[13] = "hello world\n";
-    CDC_Transmit_FS(test, sizeof(test));
+    //TODO: update to send better data later
+
+    //calculate if move occurred and capture data related to said move
+    updateMoveShit(&game);
+
+    //if current move is finished, transmit said data to teh desktop app
+    if(game.currentMove->isFinalState && game.gameStarted) {
+      uint8_t numArrays = 0;
+      if (game.currentMove->secondPiecePickup) {
+        numArrays = 3;
+
+      } else {
+        numArrays = 2;
+      }
+
+    numArrays = 2;
+
+    char test[12] = "MovePlayed\n";
+    volatile int ret1 = CDC_Transmit_FS(test, sizeof(test));
+    HAL_Delay(20);
+
+    volatile int ret2 = CDC_Transmit_FS(&numArrays , 1);
+    HAL_Delay(20);
+
+    if(numArrays == 2) {
+      volatile int ret3 = CDC_Transmit_FS((uint8_t *) &game.currentMove->firstPickupState , 64);
+      HAL_Delay(20);
+
+      volatile int ret4 = CDC_Transmit_FS((uint8_t *) &game.currentMove->finalState , 64);
+      HAL_Delay(20);
+    } else {
+      volatile int ret3 = CDC_Transmit_FS((uint8_t *) &game.currentMove->firstPickupState , 64);
+      HAL_Delay(20);
+
+      volatile int ret4 = CDC_Transmit_FS((uint8_t *) &game.currentMove->secondPickupState , 64);
+      HAL_Delay(20);
+
+      volatile int ret = CDC_Transmit_FS((uint8_t *) &game.currentMove->finalState , 64);
+      HAL_Delay(20);
+    }
+
+    volatile int x = 1;
+
+
+      game.currentMove->firstPiecePickup = false;
+      game.currentMove->secondPiecePickup = false;
+      game.currentMove->isFinalState = false;
+    }
     
+    //TODO: remove testSend shit later once better ironed out way to send data is made
+    bool testSend = false;
+    if (testSend) {
+      uint8_t arr1[8][8] = {
+            {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {1, 1, 1, 1, 0, 1, 1, 1},
+        {1, 1, 1, 1, 1, 1, 1, 1}
+      };
+       uint8_t arr2[8][8] = {
+            {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 1, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {1, 1, 1, 1, 0, 1, 1, 1},
+        {1, 1, 1, 1, 1, 1, 1, 1}
+      };
+
+    uint8_t numArrays = 2;
+
+    char test[12] = "MovePlayed\n";
+    char newline[1] = "\n";
+    volatile int ret1 = CDC_Transmit_FS(test, sizeof(test));
+    HAL_Delay(20);
+
+    volatile int ret2 = CDC_Transmit_FS(&numArrays , 1);
+    HAL_Delay(20);
+
+    volatile int ret3 = CDC_Transmit_FS((uint8_t *) &arr1 , 64);
+    HAL_Delay(20);
+
+    volatile int ret4 = CDC_Transmit_FS((uint8_t *) &arr2 , 64);
+    HAL_Delay(20);
+
+    volatile int x = 1;
+
+
+
+    }
+
   }
   /* USER CODE END 3 */
 }
