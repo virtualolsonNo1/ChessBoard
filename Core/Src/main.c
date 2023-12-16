@@ -123,6 +123,29 @@ void updateTime() {
 }
 
 
+void flipBoardArrays(struct MoveState* move) {
+
+
+  // coded this while not fully sober, I feel like this was dumb, but can be fixed later as it works
+  uint8_t temp[8][8] = {0};
+
+  for(int i = 0; i < 8; i++) {
+    temp[7 - i][0] = move->firstPickupState[i][7];
+    temp[7 - i][1] = move->firstPickupState[i][6];
+    temp[7 - i][2] = move->firstPickupState[i][5];
+    temp[7 - i][3] = move->firstPickupState[i][4];
+    temp[7 - i][4] = move->firstPickupState[i][3];
+    temp[7 - i][5] = move->firstPickupState[i][2];
+    temp[7 - i][6] = move->firstPickupState[i][1];
+    temp[7 - i][7] = move->firstPickupState[i][0];
+    
+  }
+
+  memcpy(&move->firstPickupState, &temp, 8 * 8 * sizeof(uint8_t));
+
+}
+
+
 /* USER CODE END 0 */
 
 /**
