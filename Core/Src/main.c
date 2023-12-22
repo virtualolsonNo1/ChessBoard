@@ -274,6 +274,8 @@ int main(void)
       game.currentBoardState[i][7] = (0b00000001 & ~boardstate[i]) >> 0; 
 
     }
+
+    // game.currentBoardState[3][2] = 0;
     volatile int x = 8;
 
 
@@ -321,8 +323,6 @@ int main(void)
       } else {
         numArrays = 2;
       }
-
-    numArrays = 2;
 
     char test[12] = "MovePlayed\n";
     volatile int ret1 = CDC_Transmit_FS(test, sizeof(test));

@@ -214,7 +214,7 @@ void EXTI1_IRQHandler(void)
     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_1);
     /* USER CODE BEGIN EXTI1_IRQn 1 */
     //since chess clock button pressed, change active player and start their clock
-    if(game.activePlayer == game.player2) {
+    if(game.activePlayer == game.player2 || !game.gameStarted) {
       game.activePlayer = game.player1;
       if(!game.gameStarted) {
         // ASSUMED NORMAL ORIENTATION
@@ -265,7 +265,7 @@ void EXTI3_IRQHandler(void)
     /* USER CODE END EXTI3_IRQn 0 */
     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_3);
     /* USER CODE BEGIN EXTI3_IRQn 1 */
-    if(game.activePlayer == game.player1) {
+    if(game.activePlayer == game.player1 || !game.gameStarted) {
       //since chess clock button pressed, change active player and start their clock
       game.activePlayer = game.player2;
       if(!game.gameStarted) {
