@@ -1,6 +1,11 @@
 {
     "files.associations": {
-        "stm32f4xx_hal_gpio.h": "c"
+        "stm32f4xx_hal_gpio.h": "c",
+        "usbd_def.h": "c",
+        "usb_device.h": "c",
+        "stm32f4xx_hal.h": "c",
+        "string.h": "c",
+        "max7219.h": "c"
     },
     "cpp.path": "c:\\MinGW\\bin"
 }

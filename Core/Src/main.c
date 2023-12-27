@@ -54,9 +54,9 @@ SPI_HandleTypeDef hspi2;
 
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim5;
-extern USBD_CDC_HandleTypeDef hUsbDeviceFS;
 
 /* USER CODE BEGIN PV */
+extern USBD_HandleTypeDef hUsbDeviceFS;
 
 /* USER CODE END PV */
 
@@ -220,8 +220,20 @@ int main(void)
   //initialize currentMove
   currentMove = (struct MoveState){false, false, false};
 
+  uint8_t previousState[8][8] = {
+            {1, 1, 1, 1, 1, 1, 1, 1},
+        {1, 1, 1, 1, 1, 1, 1, 1},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {1, 1, 1, 1, 1, 1, 1, 1},
+        {1, 1, 1, 1, 1, 1, 1, 1}
+      };
+
   //initialize game
   game = (struct GameState){&player1, &player1, &player2, false, ONE_MINUTE_LIMIT, false, false, &currentMove};
+  memcpy(game.previousState, previousState, 8 * 8 * sizeof(previousState[0][0]));
 
   //create buffer to store state of board and initialize game struct
   //TODO: might want to add back later!!!
@@ -324,7 +336,7 @@ int main(void)
         numArrays = 2;
       }
 
-    char test[12] = "MovePlayed\n";
+    char test[11] = "MovePlayed\n";
     volatile int ret1 = CDC_Transmit_FS(test, sizeof(test));
     HAL_Delay(20);
 
@@ -336,7 +348,6 @@ int main(void)
       HAL_Delay(20);
 
       volatile int ret4 = CDC_Transmit_FS((uint8_t *) &game.currentMove->finalState , 64);
-      HAL_Delay(20);
     } else {
       volatile int ret3 = CDC_Transmit_FS((uint8_t *) &game.currentMove->firstPickupState , 64);
       HAL_Delay(20);
@@ -345,7 +356,6 @@ int main(void)
       HAL_Delay(20);
 
       volatile int ret = CDC_Transmit_FS((uint8_t *) &game.currentMove->finalState , 64);
-      HAL_Delay(20);
     }
 
     volatile int x = 1;
@@ -357,11 +367,11 @@ int main(void)
     }
     
     //TODO: remove testSend shit later once better ironed out way to send data is made
-    bool testSend = false;
+    volatile bool testSend = false;
     if (testSend) {
       uint8_t arr1[8][8] = {
-            {0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0},
+            {1, 1, 1, 1, 1, 1, 1, 1},
+        {1, 1, 1, 1, 1, 1, 1, 1},
         {0, 0, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0},
@@ -370,8 +380,8 @@ int main(void)
         {1, 1, 1, 1, 1, 1, 1, 1}
       };
        uint8_t arr2[8][8] = {
-            {0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0},
+            {1, 1, 1, 1, 1, 1, 1, 1},
+        {1, 1, 1, 1, 1, 1, 1, 1},
         {0, 0, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 1, 0, 0, 0},
@@ -380,9 +390,20 @@ int main(void)
         {1, 1, 1, 1, 1, 1, 1, 1}
       };
 
+       uint8_t arr3[8][8] = {
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0}
+      };
+
     uint8_t numArrays = 2;
 
-    char test[12] = "MovePlayed\n";
+    char test[11] = "MovePlayed\n";
     char newline[1] = "\n";
     volatile int ret1 = CDC_Transmit_FS(test, sizeof(test));
     HAL_Delay(20);
@@ -390,15 +411,35 @@ int main(void)
     volatile int ret2 = CDC_Transmit_FS(&numArrays , 1);
     HAL_Delay(20);
 
-    volatile int ret3 = CDC_Transmit_FS((uint8_t *) &arr1 , 64);
+    volatile int ret3 = CDC_Transmit_FS((uint8_t *) &arr3 , 64);
     HAL_Delay(20);
 
     volatile int ret4 = CDC_Transmit_FS((uint8_t *) &arr2 , 64);
+
+    //must be 8 so has \0 for strcmp to use
+    char test2[8] = "";
+    USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &test2[0]);
+    volatile int z = USBD_CDC_ReceivePacket(&hUsbDeviceFS);
     HAL_Delay(20);
 
+    if(strcmp(test2, "resend\n") == 0) {
+      char test[11] = "MovePlayed\n";
+      char newline[1] = "\n";
+      volatile int ret1 = CDC_Transmit_FS(test, sizeof(test));
+      HAL_Delay(20);
+
+      volatile int ret2 = CDC_Transmit_FS(&numArrays , 1);
+      HAL_Delay(20);
+
+      volatile int ret3 = CDC_Transmit_FS((uint8_t *) &arr1 , 64);
+      HAL_Delay(20);
+
+      volatile int ret4 = CDC_Transmit_FS((uint8_t *) &arr2 , 64);
+    }
+
+
+
     volatile int x = 1;
-
-
 
     }
 

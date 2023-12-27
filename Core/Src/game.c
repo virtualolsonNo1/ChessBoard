@@ -89,21 +89,21 @@ void resetGame(struct GameState* game) {
     game->gameStarted = false;
     game->isWhiteMove = true;
 
-    //TODO: might wanna add back later for error checking!!!
-    // char newGame[8][8] = {
-    //     {'r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'},
-    //     {'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'},
-    //     {0, 0, 0, 0, 0, 0, 0, 0},
-    //     {0, 0, 0, 0, 0, 0, 0, 0},
-    //     {0, 0, 0, 0, 0, 0, 0, 0},
-    //     {0, 0, 0, 0, 0, 0, 0, 0},
-    //     {'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'},
-    //     {'R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'}
-    // };
-    // memcpy(&game->chessBoard, &newGame, 8 * 8 * sizeof(char));
-
     minutes = 1;
     secondsRemaining = 0;
+
+    uint8_t previousState[8][8] = {
+            {1, 1, 1, 1, 1, 1, 1, 1},
+        {1, 1, 1, 1, 1, 1, 1, 1},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {1, 1, 1, 1, 1, 1, 1, 1},
+        {1, 1, 1, 1, 1, 1, 1, 1}
+      };
+
+      memcpy(game->previousState, previousState, 8 * 8 * sizeof(previousState[0][0]));
 
     //reset ARR to correct value
     __HAL_TIM_SET_AUTORELOAD(game->player1->clock.timer, game->timeControl);
@@ -114,6 +114,7 @@ void resetGame(struct GameState* game) {
 }
 
 void updateMoveShit(struct GameState* game) {
+    if(game->gameStarted) {
     for(int i = 0; i < 8; i++) {
         for(int j = 0; j < 8; j++) {
             if(!game->currentMove->firstPiecePickup && game->previousState[i][j] == 1 && game->currentBoardState[i][j] == 0) {
@@ -127,7 +128,7 @@ void updateMoveShit(struct GameState* game) {
             } else if(game->currentMove->firstPiecePickup && !game->currentMove->secondPiecePickup && !game->currentMove->isFinalState && game->currentMove->firstPickupState[i][j] == 1 && game->previousState[i][j] == 1 && game->currentBoardState[i][j] == 0) {
                 //piece is removed to be taken, save state!!!!!!
                 uint8_t temp [8][8];
-                memcpy(&temp, &game->previousState, 8 * 8 * sizeof(game->previousState[0][0]));
+                memcpy(&temp, &game->currentMove->firstPickupState, 8 * 8 * sizeof(game->currentMove->firstPickupState[0][0]));
                 temp[i][j] = 0;
                 memcpy(&game->currentMove->secondPickupState, &temp, 8 * 8 * sizeof(temp[0][0]));
                 game->currentMove->secondPiecePickup = true;
@@ -139,5 +140,6 @@ void updateMoveShit(struct GameState* game) {
 
 
         }
+    }
     }
 }
