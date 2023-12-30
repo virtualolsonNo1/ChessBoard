@@ -287,7 +287,6 @@ int main(void)
 
     }
 
-    // game.currentBoardState[3][2] = 0;
     volatile int x = 8;
 
 
@@ -309,7 +308,7 @@ int main(void)
     // loop through to test LED's in binary fashion, testing all possible combinations
     // for(int i = 0; i < 256; i++) {
     //   for(int j = 0; j < 8; j++) {
-    //     ledstate[j] = 0;
+    //     ledstate[j] = i;
     //   }
     //   volatile int test = HAL_SPI_Transmit(&hspi1, (uint8_t *)ledstate, 8, 10000);
     //   while(!(SPI1->SR & 0b10)) {}
