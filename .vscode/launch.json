@@ -1,74 +1,91 @@
 {
-    "version": "0.2.0",
-    "configurations": [
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "J-Link (internal)",
+      "type": "cortex-debug",
+      "request": "launch",
+      "cwd": "${workspaceRoot}",
+      "executable": "build/${workspaceFolderBasename}.elf",
+      "servertype": "jlink",
+      "device": "STM32F411CE",
+      "preLaunchCommands": [
+        "set mem inaccessible-by-default off"
+      ],
+      "preRestartCommands": [
+        "monitor reset 0"
+      ],
+      "svdFile": "STM32F411.svd",
+      "preLaunchTask": "Build",
+      "showDevDebugOutput": "none"
+    },
+    {
+      "name": "J-Link (external)",
+      "type": "cortex-debug",
+      "request": "launch",
+      "cwd": "${workspaceRoot}",
+      "executable": "build/${workspaceFolderBasename}.elf",
+      "servertype": "external",
+      "gdbTarget": "localhost:2331",
+      "preLaunchCommands": [
+        "set mem inaccessible-by-default off",
+        "monitor reset 0"
+      ],
+      "postLaunchCommands": [
+        "monitor reset"
+      ],
+      "preRestartCommands": [
+        "monitor reset 0"
+      ],
+      "svdFile": "mcu-bsp/CMSIS/Device/Microchip/SAMG55/STM32L011K4Tx.svd",
+      "preLaunchTask": "Build",
+      "showDevDebugOutput": "none"
+    },
+    {
+      "name": "pyOCD",
+      "type": "cortex-debug",
+      "request": "launch",
+      "cwd": "${workspaceRoot}",
+      "executable": "build/${workspaceFolderBasename}.elf",
+      "servertype": "pyocd",
+      "targetId": "STM32F411VETx",
+      "gdbTarget": "localhost:5555",
+      "svdFile": "STM32F411.svd",
+      "preLaunchTask": "Build",
+      "showDevDebugOutput": "none"
+    },
+    {
+      "name": "pyOCD (external)",
+      "type": "cortex-debug",
+      "request": "launch",
+      "cwd": "${workspaceRoot}",
+      "executable": "build/${workspaceFolderBasename}.elf",
+      "servertype": "external",
+      "serverpath": "localhost:3333",
+      "targetId": "ATSAMG55J19",
+      "gdbTarget": "localhost:5555",
+      "svdFile": "ATSAMG55J19.svd",
+      "preLaunchTask": "Build",
+      "showDevDebugOutput": "none"
+    },
+    {
+      "name": "C/C++ Runner: Debug Session",
+      "type": "cppdbg",
+      "request": "launch",
+      "args": [],
+      "stopAtEntry": false,
+      "externalConsole": true,
+      "cwd": "c:/Users/virtu/Downloads/WorkProjects/ChessBoard/Core/Src",
+      "program": "c:/Users/virtu/Downloads/WorkProjects/ChessBoard/Core/Src/build/Debug/outDebug",
+      "MIMode": "gdb",
+      "miDebuggerPath": "gdb",
+      "setupCommands": [
         {
-            "name": "J-Link (internal)",
-            "type": "cortex-debug",
-            "request": "launch",
-            "cwd": "${workspaceRoot}",
-            "executable": "build/${workspaceFolderBasename}.elf",
-            "servertype": "jlink",
-            "device": "STM32F411CE",
-            "preLaunchCommands": [
-                "set mem inaccessible-by-default off",
-            ],
-
-            "preRestartCommands": [
-                "monitor reset 0"
-            ],
-            "svdFile": "STM32F411.svd",
-            
-            "preLaunchTask": "Build", // Set this to run a task from tasks.json before starting a debug session
-            "showDevDebugOutput":"none",// Shows output of GDB, helpful when something is not working right
-        },
-        {
-            "name": "J-Link (external)",
-            "type": "cortex-debug",
-            "request": "launch",
-            "cwd": "${workspaceRoot}",
-            "executable": "build/${workspaceFolderBasename}.elf",
-            "servertype": "external",
-            "gdbTarget": "localhost:2331",
-            "preLaunchCommands": [
-                "set mem inaccessible-by-default off",
-                "monitor reset 0"
-            ],
-            "postLaunchCommands": [
-                "monitor reset",
-            ],
-            "preRestartCommands": [
-                "monitor reset 0"
-            ],
-            "svdFile": "mcu-bsp/CMSIS/Device/Microchip/SAMG55/STM32L011K4Tx.svd",
-            "preLaunchTask": "Build", // Set this to run a task from tasks.json before starting a debug session
-            "showDevDebugOutput":"none",// Shows output of GDB, helpful when something is not working right
-        },
-        {
-            "name": "pyOCD",
-            "type": "cortex-debug",
-            "request": "launch",
-            "cwd": "${workspaceRoot}",
-            "executable": "build/${workspaceFolderBasename}.elf",
-            "servertype": "pyocd",
-            "targetId": "STM32F411VETx", 
-            "gdbTarget": "localhost:5555",
-            "svdFile": "STM32F411.svd",
-            "preLaunchTask": "Build", // Set this to run a task from tasks.json before starting a debug session
-            "showDevDebugOutput":"none",// Shows output of GDB, helpful when something is not working right
-        },
-        {
-            "name": "pyOCD (external)",
-            "type": "cortex-debug",
-            "request": "launch",
-            "cwd": "${workspaceRoot}",
-            "executable": "build/${workspaceFolderBasename}.elf",
-            "servertype": "external",
-            "serverpath": "localhost:3333",
-            "targetId": "ATSAMG55J19", 
-            "gdbTarget": "localhost:5555",
-            "svdFile": "ATSAMG55J19.svd",
-            "preLaunchTask": "Build", // Set this to run a task from tasks.json before starting a debug session
-            "showDevDebugOutput":"none",// Shows output of GDB, helpful when something is not working right
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
         }
-    ]
+      ]
+    }
+  ]
 }

@@ -25,11 +25,13 @@
 #include "game.h"
 #include "max7219.h"
 #include "stm32f4xx_hal.h"
-#include "usbd_cdc.h"
+// #include "usbd_cdc.h"
 #include "usb_device.h"
-#include "usbd_cdc_if.h"
+// #include "usbd_cdc_if.h"
 #include "usbd_def.h"
 #include "string.h"
+#include "usbd_customhid.h"
+#include "usb.h"
 
 /* USER CODE END Includes */
 
@@ -82,7 +84,18 @@ struct Player player1;
 struct Player player2;
 struct MoveState currentMove;
 struct GameState game;
+typedef struct report1 firstReport;
+typedef struct report2 secondReport;
 
+typedef struct __attribute__((packed))
+{
+	uint8_t button;
+	int8_t mouse_x;
+	int8_t mouse_y;
+	int8_t wheel;
+} mouseHID;
+
+mouseHID mousehid = {0, 0, 0, 0};
 
 void updateTime() {
   //grab count value from CNT register of the active player's timer
@@ -253,15 +266,45 @@ int main(void)
   //display proper starting times for both players
   initTime(&game);
 
-
+  int count = 0;
+  // mousehid.mouse_y = 600;
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+  // For Report ID 1
+  uint8_t report1[67] = {0};
+  report1[0] = 1;
+  for(int i = 1; i < 67; i++) {
+    report1[i] = i + 1;
+  }
+  
+  // ... fill the report ...
+  USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, report1, 67);
+
+  HAL_Delay(500);
+  // For Report ID 2
+  uint8_t report2[69] = {0};
+  report2[0] = 2;
+  for(int i = 1; i < 69; i++) {
+    report2[i] = i - 1;
+  }
+  // ... fill the report ...
+  USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, report2, 69);
+  HAL_Delay(200);
 
     //properly update display of each player's time
     updateTime();
+    // if (count % 2 == 0) {
+    //   mousehid.mouse_x = 200;
+    // } else {
+    //   mousehid.mouse_x = -200;
+    // }
+
+    // mousehid.button = 1;
+    // USBD_HID_SendReport(&hUsbDeviceFS, &mousehid, sizeof (mousehid));
+    HAL_Delay (50);
 
 
     //de-assert and re-assert load pin to load values into register's D flip flops
@@ -335,27 +378,27 @@ int main(void)
         numArrays = 2;
       }
 
-    char test[11] = "MovePlayed\n";
-    volatile int ret1 = CDC_Transmit_FS(test, sizeof(test));
-    HAL_Delay(20);
+    // char test[11] = "MovePlayed\n";
+    // volatile int ret1 = CDC_Transmit_FS(test, sizeof(test));
+    // HAL_Delay(20);
 
-    volatile int ret2 = CDC_Transmit_FS(&numArrays , 1);
-    HAL_Delay(20);
+    // volatile int ret2 = CDC_Transmit_FS(&numArrays , 1);
+    // HAL_Delay(20);
 
-    if(numArrays == 2) {
-      volatile int ret3 = CDC_Transmit_FS((uint8_t *) &game.currentMove->firstPickupState , 64);
-      HAL_Delay(20);
+    // if(numArrays == 2) {
+    //   volatile int ret3 = CDC_Transmit_FS((uint8_t *) &game.currentMove->firstPickupState , 64);
+    //   HAL_Delay(20);
 
-      volatile int ret4 = CDC_Transmit_FS((uint8_t *) &game.currentMove->finalState , 64);
-    } else {
-      volatile int ret3 = CDC_Transmit_FS((uint8_t *) &game.currentMove->firstPickupState , 64);
-      HAL_Delay(20);
+    //   volatile int ret4 = CDC_Transmit_FS((uint8_t *) &game.currentMove->finalState , 64);
+    // } else {
+    //   volatile int ret3 = CDC_Transmit_FS((uint8_t *) &game.currentMove->firstPickupState , 64);
+    //   HAL_Delay(20);
 
-      volatile int ret4 = CDC_Transmit_FS((uint8_t *) &game.currentMove->secondPickupState , 64);
-      HAL_Delay(20);
+    //   volatile int ret4 = CDC_Transmit_FS((uint8_t *) &game.currentMove->secondPickupState , 64);
+    //   HAL_Delay(20);
 
-      volatile int ret = CDC_Transmit_FS((uint8_t *) &game.currentMove->finalState , 64);
-    }
+    //   volatile int ret = CDC_Transmit_FS((uint8_t *) &game.currentMove->finalState , 64);
+    // }
 
     volatile int x = 1;
 
@@ -402,39 +445,39 @@ int main(void)
 
     uint8_t numArrays = 2;
 
-    char test[11] = "MovePlayed\n";
-    char newline[1] = "\n";
-    volatile int ret1 = CDC_Transmit_FS(test, sizeof(test));
-    HAL_Delay(20);
+    // char test[11] = "MovePlayed\n";
+    // char newline[1] = "\n";
+    // volatile int ret1 = CDC_Transmit_FS(test, sizeof(test));
+    // HAL_Delay(20);
 
-    volatile int ret2 = CDC_Transmit_FS(&numArrays , 1);
-    HAL_Delay(20);
+    // volatile int ret2 = CDC_Transmit_FS(&numArrays , 1);
+    // HAL_Delay(20);
 
-    volatile int ret3 = CDC_Transmit_FS((uint8_t *) &arr3 , 64);
-    HAL_Delay(20);
+    // volatile int ret3 = CDC_Transmit_FS((uint8_t *) &arr3 , 64);
+    // HAL_Delay(20);
 
-    volatile int ret4 = CDC_Transmit_FS((uint8_t *) &arr2 , 64);
+    // volatile int ret4 = CDC_Transmit_FS((uint8_t *) &arr2 , 64);
 
-    //must be 8 so has \0 for strcmp to use
-    char test2[8] = "";
-    USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &test2[0]);
-    volatile int z = USBD_CDC_ReceivePacket(&hUsbDeviceFS);
-    HAL_Delay(20);
+    // //must be 8 so has \0 for strcmp to use
+    // char test2[8] = "";
+    // USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &test2[0]);
+    // volatile int z = USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+    // HAL_Delay(20);
 
-    if(strcmp(test2, "resend\n") == 0) {
-      char test[11] = "MovePlayed\n";
-      char newline[1] = "\n";
-      volatile int ret1 = CDC_Transmit_FS(test, sizeof(test));
-      HAL_Delay(20);
+    // if(strcmp(test2, "resend\n") == 0) {
+    //   char test[11] = "MovePlayed\n";
+    //   char newline[1] = "\n";
+    //   volatile int ret1 = CDC_Transmit_FS(test, sizeof(test));
+    //   HAL_Delay(20);
 
-      volatile int ret2 = CDC_Transmit_FS(&numArrays , 1);
-      HAL_Delay(20);
+    //   volatile int ret2 = CDC_Transmit_FS(&numArrays , 1);
+    //   HAL_Delay(20);
 
-      volatile int ret3 = CDC_Transmit_FS((uint8_t *) &arr1 , 64);
-      HAL_Delay(20);
+    //   volatile int ret3 = CDC_Transmit_FS((uint8_t *) &arr1 , 64);
+    //   HAL_Delay(20);
 
-      volatile int ret4 = CDC_Transmit_FS((uint8_t *) &arr2 , 64);
-    }
+    //   volatile int ret4 = CDC_Transmit_FS((uint8_t *) &arr2 , 64);
+    // }
 
 
 

@@ -18,11 +18,13 @@
 - Other than this, I wrote all of the code used in this code base
 
 # REMAINING TODOs
-- Because I forgot a 48Mhz crystall oscillator, I still need to order one, connect it properly to my PCB, and then output my hall data over USB-C
-    - After this, I will need to write a python desktop app to process said data, but this should not be hard with python's numerous libraries, namely the python chess library, which I've used extensively before
-    - Similarly, because speed is not a huge concern with something like this where human movement is the limiting factor, python will be plenty quick for this job despite being much, much slower than C
-- Additionally, I was having some power issues with the LEDs, where only the first 4 rows operated as intended, with the latter half being half lit up but not fully lit up or off. I resoldered all of the shift registers with new ICs, hooked up a logic analyzer to see if the correct data was going through, etc., and even had my boss who is an Electrical Engineer have a go at it, and nothing came of it, leading to the conclusion that there's most likely a power issue somewhere. 
-    - This very well could be the case with 64 LEDs all being powered over USB-C, but a current limit was imposed on each LED using the shift registers for them, so this shouldn't be an issue, so I will have to do a board spin with just one row later, trying to figure out a better way to route power to each LED
+- Get USB HID working
+    - Get desktop app and 
+- Get LEDs communicating with desktop app
+- Add in extra functionality
+    - no clock mode
+    - different light features (i.e. light up before pieces are in place, no light up mode, etc)
+    - opening practice mode, where in app you can choose opening and it'll give you a random position from which you can place pieces on correct lit up spots and play what you think best move is
 
 # USE CASE
 - Once finished, the chess board will function as follows:
