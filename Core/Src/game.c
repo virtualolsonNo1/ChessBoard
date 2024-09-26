@@ -3,6 +3,8 @@
 #include "max7219.h"
 #include "stm32f4xx_hal_tim.h"
 #include "string.h"
+#include "usb.h"
+extern HID_Report_u report;
 
 void initTime(struct GameState* game) {
     //initialize the display with the starting time for both players
@@ -118,24 +120,37 @@ void updateMoveShit(struct GameState* game) {
     for(int i = 0; i < 8; i++) {
         for(int j = 0; j < 8; j++) {
             if(!game->currentMove->firstPiecePickup && game->previousState[i][j] == 1 && game->currentBoardState[i][j] == 0) {
-                //piece was picked up!!!
-                uint8_t temp [8][8];
-                memcpy(&temp, &game->previousState, 8 * 8 * sizeof(game->previousState[0][0]));
-                temp[i][j] = 0;
-                memcpy(&game->currentMove->firstPickupState, &temp, 8 * 8 * sizeof(temp[0][0]));
+                //first piece was picked up!!!
+                // uint8_t temp [8][8];
+                // memcpy(&temp, &game->previousState, 8 * 8 * sizeof(game->previousState[0][0]));
+                // temp[i][j] = 0;
+                // memcpy(&game->currentMove->firstPickupState, &temp, 8 * 8 * sizeof(temp[0][0]));
+                report.report1.firstPickupCol = i;
+                report.report1.firstPickupRow = j;
                 game->currentMove->firstPiecePickup = true;
                 //TODO: test if this code is fixed for picking up a piece, moving it over a square, then moving it to a different square
             } else if(game->currentMove->firstPiecePickup && !game->currentMove->secondPiecePickup && !game->currentMove->isFinalState && game->currentMove->firstPickupState[i][j] == 1 && game->previousState[i][j] == 1 && game->currentBoardState[i][j] == 0) {
-                //piece is removed to be taken, save state!!!!!!
-                uint8_t temp [8][8];
-                memcpy(&temp, &game->currentMove->firstPickupState, 8 * 8 * sizeof(game->currentMove->firstPickupState[0][0]));
-                temp[i][j] = 0;
-                memcpy(&game->currentMove->secondPickupState, &temp, 8 * 8 * sizeof(temp[0][0]));
+                uint8_t tempI = report.report1.firstPickupCol;
+                uint8_t tempJ = report.report1.firstPickupRow;
+                report.report2.firstPickupCol = tempI;
+                report.report2.firstPickupRow = tempJ;
+                report.report2.secondPickupCol = i;
+                report.report2.secondPickupRow = j;
+                // second piece was picked up
+                // uint8_t temp [8][8];
+                // memcpy(&temp, &game->currentMove->firstPickupState, 8 * 8 * sizeof(game->currentMove->firstPickupState[0][0]));
+                // temp[i][j] = 0;
+                // memcpy(&game->currentMove->secondPickupState, &temp, 8 * 8 * sizeof(temp[0][0]));
                 game->currentMove->secondPiecePickup = true;
             } else if(game->currentMove->isFinalState) {
                 //button was hit to finish this move and change to other player's move, so save final state and update previous state to current state
-                memcpy(game->currentMove->finalState, game->currentBoardState, 8 * 8 * sizeof(game->currentMove->finalState[0][0]));
+                if (sizeof(report) == HID_REPORT1_SIZE) {
+                memcpy(report.report1.secondPickupState, game->currentBoardState, 8 * 8 * sizeof(game->currentMove->finalState[0][0]));
                 memcpy(game->previousState, game->currentBoardState, 8 * 8 * sizeof(game->previousState[0][0]));
+                } else {
+                memcpy(report.report2.thirdPickupState, game->currentBoardState, 8 * 8 * sizeof(game->currentMove->finalState[0][0]));
+                memcpy(game->previousState, game->currentBoardState, 8 * 8 * sizeof(game->previousState[0][0]));
+                }
             }
 
 

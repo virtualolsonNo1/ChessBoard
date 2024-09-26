@@ -84,8 +84,9 @@ struct Player player1;
 struct Player player2;
 struct MoveState currentMove;
 struct GameState game;
-typedef struct report1 firstReport;
-typedef struct report2 secondReport;
+// typedef struct report1 firstReport;
+// typedef struct report2 secondReport;
+HID_Report_u report;
 
 typedef struct __attribute__((packed))
 {
@@ -274,24 +275,39 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
   // For Report ID 1
-  uint8_t report1[67] = {0};
-  report1[0] = 1;
-  for(int i = 1; i < 67; i++) {
-    report1[i] = i + 1;
+  // uint8_t report1[67] = {0};
+  // report1[0] = 1;
+  report.report1.reportId = 1;
+  report.report1.firstPickupCol = 7;
+  report.report1.firstPickupRow = 7;
+  int size = sizeof(report);
+  for(int i = 0; i < 8; i++) {
+    for(int j = 0; j < 8; j++) {
+    // report1[i] = i + 1;
+    report.report1.secondPickupState[i][j] = i;
+    }
   }
   
   // ... fill the report ...
-  USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, report1, 67);
+  USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&report, 67);
 
   HAL_Delay(500);
   // For Report ID 2
-  uint8_t report2[69] = {0};
-  report2[0] = 2;
-  for(int i = 1; i < 69; i++) {
-    report2[i] = i - 1;
+  // uint8_t report2[69] = {0};
+  // report2[0] = 2;
+  report.report2.reportId = 2;
+  report.report2.firstPickupCol = 7;
+  report.report2.firstPickupRow = 7;
+  report.report2.secondPickupCol = 7;
+  report.report2.secondPickupRow = 7;
+  for(int i = 1; i < 8; i++) {
+    for(int j = 0; j < 8; j++) {
+    // report2[i] = i - 1;
+    report.report2.thirdPickupState[i][j] = i;
+    }
   }
   // ... fill the report ...
-  USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, report2, 69);
+  USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t *) &report, 69);
   HAL_Delay(200);
 
     //properly update display of each player's time
