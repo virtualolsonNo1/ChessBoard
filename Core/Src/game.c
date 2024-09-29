@@ -4,7 +4,7 @@
 #include "stm32f4xx_hal_tim.h"
 #include "string.h"
 #include "usb.h"
-extern HID_Report_u report;
+extern HIDClockModeReports clockModeReport;
 
 void initTime(struct GameState* game) {
     //initialize the display with the starting time for both players
@@ -125,17 +125,13 @@ void updateMoveShit(struct GameState* game) {
                 // memcpy(&temp, &game->previousState, 8 * 8 * sizeof(game->previousState[0][0]));
                 // temp[i][j] = 0;
                 // memcpy(&game->currentMove->firstPickupState, &temp, 8 * 8 * sizeof(temp[0][0]));
-                report.report1.firstPickupCol = i;
-                report.report1.firstPickupRow = j;
+                clockModeReport.firstPickupRow = i;
+                clockModeReport.firstPickupCol = j;
                 game->currentMove->firstPiecePickup = true;
                 //TODO: test if this code is fixed for picking up a piece, moving it over a square, then moving it to a different square
             } else if(game->currentMove->firstPiecePickup && !game->currentMove->secondPiecePickup && !game->currentMove->isFinalState && game->currentMove->firstPickupState[i][j] == 1 && game->previousState[i][j] == 1 && game->currentBoardState[i][j] == 0) {
-                uint8_t tempI = report.report1.firstPickupCol;
-                uint8_t tempJ = report.report1.firstPickupRow;
-                report.report2.firstPickupCol = tempI;
-                report.report2.firstPickupRow = tempJ;
-                report.report2.secondPickupCol = i;
-                report.report2.secondPickupRow = j;
+                clockModeReport.secondPickupRow = i;
+                clockModeReport.secondPickupCol = j;
                 // second piece was picked up
                 // uint8_t temp [8][8];
                 // memcpy(&temp, &game->currentMove->firstPickupState, 8 * 8 * sizeof(game->currentMove->firstPickupState[0][0]));
@@ -144,13 +140,12 @@ void updateMoveShit(struct GameState* game) {
                 game->currentMove->secondPiecePickup = true;
             } else if(game->currentMove->isFinalState) {
                 //button was hit to finish this move and change to other player's move, so save final state and update previous state to current state
-                if (sizeof(report) == HID_REPORT1_SIZE) {
-                memcpy(report.report1.secondPickupState, game->currentBoardState, 8 * 8 * sizeof(game->currentMove->finalState[0][0]));
-                memcpy(game->previousState, game->currentBoardState, 8 * 8 * sizeof(game->previousState[0][0]));
+                if (!game->currentMove->secondPiecePickup) {
+                memcpy(clockModeReport.secondPickupState, game->currentBoardState, 8 * 8 * sizeof(game->currentMove->finalState[0][0]));
                 } else {
-                memcpy(report.report2.thirdPickupState, game->currentBoardState, 8 * 8 * sizeof(game->currentMove->finalState[0][0]));
-                memcpy(game->previousState, game->currentBoardState, 8 * 8 * sizeof(game->previousState[0][0]));
+                memcpy(clockModeReport.thirdPickupState, game->currentBoardState, 8 * 8 * sizeof(game->currentMove->finalState[0][0]));
                 }
+                memcpy(game->previousState, game->currentBoardState, 8 * 8 * sizeof(game->previousState[0][0]));
             }
 
 

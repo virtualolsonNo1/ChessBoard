@@ -19,7 +19,16 @@ typedef struct __attribute__((packed)) {
 } HID_Report2_t;
 
 // Union of both report types
-typedef union {
-    HID_Report1_t report1;
-    HID_Report2_t report2;
-} HID_Report_u;
+typedef struct __attribute__((packed)) {
+    uint8_t reportId;
+    uint8_t firstPickupCol;
+    uint8_t firstPickupRow;
+     union {
+        uint8_t secondPickupState[8][8];
+        struct __attribute__((packed)) {
+            uint8_t secondPickupCol;
+            uint8_t secondPickupRow;
+            uint8_t thirdPickupState[8][8];
+        };
+    };
+} HIDClockModeReports;
