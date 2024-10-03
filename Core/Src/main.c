@@ -32,6 +32,7 @@
 #include "string.h"
 #include "usbd_customhid.h"
 #include "usb.h"
+#include "test.h"
 
 /* USER CODE END Includes */
 
@@ -137,27 +138,27 @@ void updateTime() {
 }
 
 
-void flipBoardArrays(struct MoveState* move) {
+// void flipBoardArrays(struct MoveState* move) {
 
 
-  // coded this while not fully sober, I feel like this was dumb, but can be fixed later as it works
-  uint8_t temp[8][8] = {0};
+//   // coded this while not fully sober, I feel like this was dumb, but can be fixed later as it works
+//   uint8_t temp[8][8] = {0};
 
-  for(int i = 0; i < 8; i++) {
-    temp[7 - i][0] = move->firstPickupState[i][7];
-    temp[7 - i][1] = move->firstPickupState[i][6];
-    temp[7 - i][2] = move->firstPickupState[i][5];
-    temp[7 - i][3] = move->firstPickupState[i][4];
-    temp[7 - i][4] = move->firstPickupState[i][3];
-    temp[7 - i][5] = move->firstPickupState[i][2];
-    temp[7 - i][6] = move->firstPickupState[i][1];
-    temp[7 - i][7] = move->firstPickupState[i][0];
+//   for(int i = 0; i < 8; i++) {
+//     temp[7 - i][0] = move->firstPickupState[i][7];
+//     temp[7 - i][1] = move->firstPickupState[i][6];
+//     temp[7 - i][2] = move->firstPickupState[i][5];
+//     temp[7 - i][3] = move->firstPickupState[i][4];
+//     temp[7 - i][4] = move->firstPickupState[i][3];
+//     temp[7 - i][5] = move->firstPickupState[i][2];
+//     temp[7 - i][6] = move->firstPickupState[i][1];
+//     temp[7 - i][7] = move->firstPickupState[i][0];
     
-  }
+//   }
 
-  memcpy(&move->firstPickupState, &temp, 8 * 8 * sizeof(uint8_t));
+//   memcpy(&move->firstPickupState, &temp, 8 * 8 * sizeof(uint8_t));
 
-}
+// }
 
 
 /* USER CODE END 0 */
@@ -277,38 +278,42 @@ int main(void)
   // For Report ID 1
   // uint8_t report1[67] = {0};
   // report1[0] = 1;
-  clockModeReport.reportId = 1;
-  clockModeReport.firstPickupCol = 7;
-  clockModeReport.firstPickupRow = 7;
-  int size = sizeof(clockModeReport);
-  for(int i = 0; i < 8; i++) {
-    for(int j = 0; j < 8; j++) {
-    // report1[i] = i + 1;
-    clockModeReport.secondPickupState[i][j] = i;
-    }
-  }
+  // clockModeReport.reportId = 1;
+  // clockModeReport.firstPickupRow = 2;
+  // clockModeReport.firstPickupCol = 3;
+  // clockModeReport.report1.finalPickupRow = 4;
+  // clockModeReport.report1.finalPickupCol = 5;
+  // int size = sizeof(clockModeReport);
+  // for(int i = 0; i < 8; i++) {
+  //   for(int j = 0; j < 8; j++) {
+  //   // report1[i] = i + 1;
+  //   clockModeReport.secondPickupState[i][j] = i;
+  //   }
+  // }
   
   // ... fill the report ...
-  USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 67);
+  // USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 5);
 
-  HAL_Delay(500);
+  // HAL_Delay(500);
   // For Report ID 2
   // uint8_t report2[69] = {0};
   // report2[0] = 2;
-  clockModeReport.reportId = 2;
-  clockModeReport.firstPickupCol = 7;
-  clockModeReport.firstPickupRow = 7;
-  clockModeReport.secondPickupCol = 7;
-  clockModeReport.secondPickupRow = 7;
-  for(int i = 1; i < 8; i++) {
-    for(int j = 0; j < 8; j++) {
-    // report2[i] = i - 1;
-    clockModeReport.thirdPickupState[i][j] = i;
-    }
-  }
+  // clockModeReport.reportId = 2;
+  // clockModeReport.firstPickupRow = 2;
+  // clockModeReport.firstPickupCol = 3;
+  // clockModeReport.report2.secondPickupRow = 4;
+  // clockModeReport.report2.secondPickupCol = 5;
+  // clockModeReport.report2.finalPickupRow = 6;
+  // clockModeReport.report2.finalPickupCol = 7;
+  // for(int i = 1; i < 8; i++) {
+  //   for(int j = 0; j < 8; j++) {
+  //   // report2[i] = i - 1;
+  //   clockModeReport.thirdPickupState[i][j] = i;
+  //   }
+  // }
   // ... fill the report ...
-  USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t *) &clockModeReport, 69);
-  HAL_Delay(200);
+  // USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t *) &clockModeReport, 7);
+  // HAL_Delay(200);
 
     //properly update display of each player's time
     updateTime();
@@ -382,39 +387,20 @@ int main(void)
     //TODO: update to send better data later
 
     //calculate if move occurred and capture data related to said move
-    updateMoveShit(&game);
+    // updateMoveShit(&game);
 
     //if current move is finished, transmit said data to teh desktop app
     if(game.currentMove->isFinalState && game.gameStarted) {
-      uint8_t numArrays = 0;
+      
       if (game.currentMove->secondPiecePickup) {
-        numArrays = 3;
-
+        
+        clockModeReport.reportId = 2;
+        USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 69);
       } else {
-        numArrays = 2;
+        clockModeReport.reportId = 1;
+
+        USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 67);
       }
-
-    // char test[11] = "MovePlayed\n";
-    // volatile int ret1 = CDC_Transmit_FS(test, sizeof(test));
-    // HAL_Delay(20);
-
-    // volatile int ret2 = CDC_Transmit_FS(&numArrays , 1);
-    // HAL_Delay(20);
-
-    // if(numArrays == 2) {
-    //   volatile int ret3 = CDC_Transmit_FS((uint8_t *) &game.currentMove->firstPickupState , 64);
-    //   HAL_Delay(20);
-
-    //   volatile int ret4 = CDC_Transmit_FS((uint8_t *) &game.currentMove->finalState , 64);
-    // } else {
-    //   volatile int ret3 = CDC_Transmit_FS((uint8_t *) &game.currentMove->firstPickupState , 64);
-    //   HAL_Delay(20);
-
-    //   volatile int ret4 = CDC_Transmit_FS((uint8_t *) &game.currentMove->secondPickupState , 64);
-    //   HAL_Delay(20);
-
-    //   volatile int ret = CDC_Transmit_FS((uint8_t *) &game.currentMove->finalState , 64);
-    // }
 
     volatile int x = 1;
 
@@ -422,6 +408,13 @@ int main(void)
       game.currentMove->firstPiecePickup = false;
       game.currentMove->secondPiecePickup = false;
       game.currentMove->isFinalState = false;
+    }
+    
+
+    volatile bool sendTest = true;
+    if (sendTest) {
+      sendTestGame();
+      HAL_Delay(10000);
     }
     
     //TODO: remove testSend shit later once better ironed out way to send data is made

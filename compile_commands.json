@@ -1331,5 +1331,42 @@
    "build/usbd_customhid.o"
   ],
   "file": "Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Src/usbd_customhid.c"
+ },
+ {
+  "directory": "C:\\Users\\virtu\\Downloads\\WorkProjects\\ChessBoard",
+  "arguments": [
+   "arm-none-eabi-gcc",
+   "-c",
+   "-mcpu=cortex-m4",
+   "-mthumb",
+   "-mfpu=fpv4-sp-d16",
+   "-mfloat-abi=hard",
+   "-DUSE_HAL_DRIVER",
+   "-DSTM32F411xE",
+   "-ICore/Inc",
+   "-IDrivers/STM32F4xx_HAL_Driver/Inc",
+   "-IDrivers/STM32F4xx_HAL_Driver/Inc/Legacy",
+   "-IDrivers/CMSIS/Device/ST/STM32F4xx/Include",
+   "-IDrivers/CMSIS/Include",
+   "-IUSB_DEVICE/App",
+   "-IUSB_DEVICE/Target",
+   "-IMiddlewares/ST/STM32_USB_Device_Library/Core/Inc",
+   "-IUSB_DEVICE/App",
+   "-IMiddlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc",
+   "-Og",
+   "-Wall",
+   "-fdata-sections",
+   "-ffunction-sections",
+   "-g",
+   "-gdwarf-2",
+   "-MMD",
+   "-MP",
+   "-MFbuild/test.d",
+   "-Wa,-a,-ad,-alms=build/test.lst",
+   "Core/Src/test.c",
+   "-o",
+   "build/test.o"
+  ],
+  "file": "Core/Src/test.c"
  }
 ]

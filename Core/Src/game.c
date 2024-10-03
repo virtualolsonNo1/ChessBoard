@@ -129,9 +129,9 @@ void updateMoveShit(struct GameState* game) {
                 clockModeReport.firstPickupCol = j;
                 game->currentMove->firstPiecePickup = true;
                 //TODO: test if this code is fixed for picking up a piece, moving it over a square, then moving it to a different square
-            } else if(game->currentMove->firstPiecePickup && !game->currentMove->secondPiecePickup && !game->currentMove->isFinalState && game->currentMove->firstPickupState[i][j] == 1 && game->previousState[i][j] == 1 && game->currentBoardState[i][j] == 0) {
-                clockModeReport.secondPickupRow = i;
-                clockModeReport.secondPickupCol = j;
+            } else if(game->currentMove->firstPiecePickup && !game->currentMove->secondPiecePickup && !game->currentMove->isFinalState && !(i == clockModeReport.firstPickupRow && j == clockModeReport.firstPickupCol) && game->previousState[i][j] == 1 && game->currentBoardState[i][j] == 0) {
+                clockModeReport.report2.secondPickupRow = i;
+                clockModeReport.report2.secondPickupCol = j;
                 // second piece was picked up
                 // uint8_t temp [8][8];
                 // memcpy(&temp, &game->currentMove->firstPickupState, 8 * 8 * sizeof(game->currentMove->firstPickupState[0][0]));
@@ -141,9 +141,9 @@ void updateMoveShit(struct GameState* game) {
             } else if(game->currentMove->isFinalState) {
                 //button was hit to finish this move and change to other player's move, so save final state and update previous state to current state
                 if (!game->currentMove->secondPiecePickup) {
-                memcpy(clockModeReport.secondPickupState, game->currentBoardState, 8 * 8 * sizeof(game->currentMove->finalState[0][0]));
+                // memcpy(clockModeReport.secondPickupState, game->currentBoardState, 8 * 8 * sizeof(game->previousState[0][0]));
                 } else {
-                memcpy(clockModeReport.thirdPickupState, game->currentBoardState, 8 * 8 * sizeof(game->currentMove->finalState[0][0]));
+                // memcpy(clockModeReport.thirdPickupState, game->currentBoardState, 8 * 8 * sizeof(game->previousState[0][0]));
                 }
                 memcpy(game->previousState, game->currentBoardState, 8 * 8 * sizeof(game->previousState[0][0]));
             }
