@@ -269,7 +269,6 @@ int main(void)
   initTime(&game);
 
   int count = 0;
-  // mousehid.mouse_y = 600;
   while (1)
   {
     /* USER CODE END WHILE */
@@ -351,6 +350,9 @@ int main(void)
 
     }
 
+    // TODO: remove this later once hall effect sensor fixed!!!!!!!!!!!!!!!!!!!!!!!!!
+    game.currentBoardState[3][2] = 0;
+
     volatile int x = 8;
 
 
@@ -392,19 +394,29 @@ int main(void)
     //if current move is finished, transmit said data to teh desktop app
     if(game.currentMove->isFinalState && game.gameStarted) {
       
-      if (game.currentMove->secondPiecePickup) {
+      // if (game.currentMove->secondPiecePickup) {
         
-        clockModeReport.reportId = 2;
-        USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 69);
-      } else {
-        clockModeReport.reportId = 1;
+      //   clockModeReport.reportId = 2;
+      //   USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 7);
+      // } else {
+      //   clockModeReport.reportId = 1;
 
-        USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 67);
-      }
+      //   USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 5);
+      // }
 
     volatile int x = 1;
+    
+    // TODO: MAKE REPORT TO BE SENT BACK HERE WITH CHAR BOARD POSITION!!!!!!!!!!!!!!!!!!!!
 
-
+    
+      if (clockModeReport.reportId == 2) {
+        clockModeReport.report2.finalPickupRow = 8;
+        clockModeReport.report2.finalPickupCol = 8;
+      } else {
+        clockModeReport.report1.finalPickupRow = 8;
+        clockModeReport.report1.finalPickupCol = 8;
+        
+      }
       game.currentMove->firstPiecePickup = false;
       game.currentMove->secondPiecePickup = false;
       game.currentMove->isFinalState = false;
@@ -413,8 +425,8 @@ int main(void)
 
     volatile bool sendTest = true;
     if (sendTest) {
+      HAL_Delay(7000);
       sendTestGame();
-      HAL_Delay(10000);
     }
     
     //TODO: remove testSend shit later once better ironed out way to send data is made

@@ -4,7 +4,11 @@
 #include "stm32f4xx_hal_tim.h"
 #include "string.h"
 #include "usb.h"
+#include "usbd_def.h"
+#include "usbd_customhid.h"
+
 extern HIDClockModeReports clockModeReport;
+extern USBD_HandleTypeDef hUsbDeviceFS;
 
 void initTime(struct GameState* game) {
     //initialize the display with the starting time for both players
@@ -112,6 +116,13 @@ void resetGame(struct GameState* game) {
     __HAL_TIM_SET_AUTORELOAD(game->player2->clock.timer, game->timeControl);
     HAL_TIM_Base_Init(game->player1->clock.timer);
     HAL_TIM_Base_Init(game->player2->clock.timer);
+    
+    // send reset game report to desktop app
+    clockModeReport.reportId = 3;
+    clockModeReport.report3.reset = 1;
+    USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint32_t*)&clockModeReport, 2);
+    // HAL_Delay(50);
+    
     return;
 }
 
@@ -139,6 +150,14 @@ void updateMoveShit(struct GameState* game) {
                 // memcpy(&game->currentMove->secondPickupState, &temp, 8 * 8 * sizeof(temp[0][0]));
                 game->currentMove->secondPiecePickup = true;
             } else if(game->currentMove->isFinalState) {
+                for(int i = 0; i < 8; i++) {
+                    for(int j = 0; j < 8; j++) {
+                        if (game->previousState[i][j] == 0 && game->currentBoardState[i][j] == 1) {
+                            clockModeReport.report2.finalPickupRow = i;
+                            clockModeReport.report2.finalPickupCol = j;
+                        }
+                    }
+                }
                 //button was hit to finish this move and change to other player's move, so save final state and update previous state to current state
                 if (!game->currentMove->secondPiecePickup) {
                 // memcpy(clockModeReport.secondPickupState, game->currentBoardState, 8 * 8 * sizeof(game->previousState[0][0]));

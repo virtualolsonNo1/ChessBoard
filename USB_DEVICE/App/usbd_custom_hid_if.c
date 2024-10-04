@@ -120,6 +120,15 @@ __ALIGN_BEGIN static uint8_t CUSTOM_HID_ReportDesc_FS[USBD_CUSTOM_HID_REPORT_DES
 0x09, 0x04,        //   Usage (0x04 - finalStateRow)
 0x09, 0x05,        //   Usage (0x05 - finalStateCol)
 0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+
+// Report ID 3: resetGame (1 byte data)
+0x85, 0x03,        //   Report ID (3)
+0x15, 0x00,        //   Logical Minimum (0)
+0x25, 0x01,        //   Logical Maximum (1)
+0x75, 0x08,        //   Report Size (8 bits)
+0x95, 0x01,        //   Report Count (1)
+0x09, 0x08,        //   Usage (0x08 - resetGame)
+0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
   /* USER CODE END 0 */
   0xC0    /*     END_COLLECTION	             */
 };
