@@ -93,7 +93,7 @@ USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint32_t*)&clockModeReport, 7);
 HAL_Delay(100);
 
 clockModeReport.reportId = 3;
-clockModeReport.report3.reset = 1;
+clockModeReport.report3.reset = 0;
 USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint8_t*)&clockModeReport, 2); 
 
 // HAL_Delay(500);

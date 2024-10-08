@@ -94,7 +94,6 @@ __ALIGN_BEGIN static uint8_t CUSTOM_HID_ReportDesc_FS[USBD_CUSTOM_HID_REPORT_DES
 0x06, 0x00, 0xFF,  // Usage Page (Vendor Defined 0xFF00)
 0x09, 0x01,        // Usage (0x01)
 0xA1, 0x01,        // Collection (Application)
-
 // Report ID 1: 1 set of pickup data + finalStateRow and finalStateCol
 0x85, 0x01,        //   Report ID (1)
 0x15, 0x00,        //   Logical Minimum (0)
@@ -106,7 +105,6 @@ __ALIGN_BEGIN static uint8_t CUSTOM_HID_ReportDesc_FS[USBD_CUSTOM_HID_REPORT_DES
 0x09, 0x04,        //   Usage (0x04 - finalStateRow)
 0x09, 0x05,        //   Usage (0x05 - finalStateCol)
 0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
-
 // Report ID 2: 2 sets of pickup data + finalStateRow and finalStateCol
 0x85, 0x02,        //   Report ID (2)
 0x15, 0x00,        //   Logical Minimum (0)
@@ -120,15 +118,30 @@ __ALIGN_BEGIN static uint8_t CUSTOM_HID_ReportDesc_FS[USBD_CUSTOM_HID_REPORT_DES
 0x09, 0x04,        //   Usage (0x04 - finalStateRow)
 0x09, 0x05,        //   Usage (0x05 - finalStateCol)
 0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
-
 // Report ID 3: resetGame (1 byte data)
 0x85, 0x03,        //   Report ID (3)
 0x15, 0x00,        //   Logical Minimum (0)
-0x25, 0x01,        //   Logical Maximum (1)
+0x25, 0x01,        //   Logical Maximum (2)
 0x75, 0x08,        //   Report Size (8 bits)
 0x95, 0x01,        //   Report Count (1)
 0x09, 0x08,        //   Usage (0x08 - resetGame)
 0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+// Report ID 4: 64-byte array for light status (Input)
+0x85, 0x04,        //   Report ID (4)
+0x15, 0x00,        //   Logical Minimum (0)
+0x25, 0x01,        //   Logical Maximum (1)
+0x75, 0x08,        //   Report Size (8 bits)
+0x95, 0x40,        //   Report Count (64)
+0x09, 0x09,        //   Usage (0x09 - Light Status)
+0x91, 0x02,        //   Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+// Report ID 5: 64-byte array for letters/numbers (Output)
+0x85, 0x05,        //   Report ID (5)
+0x15, 0x30,        //   Logical Minimum (48)
+0x25, 0x7A,        //   Logical Maximum (122)
+0x75, 0x08,        //   Report Size (8 bits)
+0x95, 0x40,        //   Report Count (64)
+0x09, 0x0A,        //   Usage (0x0A - Letter/Number Array)
+0x91, 0x02,        //   Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
   /* USER CODE END 0 */
   0xC0    /*     END_COLLECTION	             */
 };

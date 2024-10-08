@@ -275,7 +275,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
   // For Report ID 1
-  // uint8_t report1[67] = {0};
+  // uint8_t report1[5] = {0, 1, 2, 3, 4};
   // report1[0] = 1;
   // clockModeReport.reportId = 1;
   // clockModeReport.firstPickupRow = 2;
@@ -291,11 +291,11 @@ int main(void)
   // }
   
   // ... fill the report ...
-  // USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 5);
+  // USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, report1, 5);
 
   // HAL_Delay(500);
   // For Report ID 2
-  // uint8_t report2[69] = {0};
+  // uint8_t report2[7] = {0, 1, 2, 3, 4, 5, 6};
   // report2[0] = 2;
   // clockModeReport.reportId = 2;
   // clockModeReport.firstPickupRow = 2;
@@ -311,7 +311,7 @@ int main(void)
   //   }
   // }
   // ... fill the report ...
-  // USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t *) &clockModeReport, 7);
+  // USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,  report2, 7);
   // HAL_Delay(200);
 
     //properly update display of each player's time
@@ -425,7 +425,7 @@ int main(void)
 
     volatile bool sendTest = true;
     if (sendTest) {
-      HAL_Delay(7000);
+      HAL_Delay(2000);
       sendTestGame();
     }
     
