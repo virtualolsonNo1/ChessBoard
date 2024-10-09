@@ -202,5 +202,5 @@ void updateLights() {
       while(!(GPIOA->ODR & GPIO_PIN_10)) {}
       HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
       while((GPIOA->ODR & GPIO_PIN_10)) {}
-   } 
+   }
 }

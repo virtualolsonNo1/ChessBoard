@@ -5,12 +5,15 @@
 #include "string.h"
 #include "test.h"
 #include "stm32f4xx_ll_usb.h"
+#include "game.h"
 
 extern HIDClockModeReports clockModeReport;
 extern USBD_HandleTypeDef hUsbDeviceFS;
+extern struct GameState game;
 
 void sendTestGame() {
 
+// game.currentMove->lightsOn = false;
  // Move 1
 uint8_t arr1[8][8] = {{1,1,1,1,1,1,1,1},{1,1,1,1,1,1,1,1},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{1,1,1,1,0,1,1,1},{1,1,1,1,1,1,1,1}};
 uint8_t arr2[8][8] = {{1,1,1,1,1,1,1,1},{1,1,1,1,1,1,1,1},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,1,0,0,0},{0,0,0,0,0,0,0,0},{1,1,1,1,0,1,1,1},{1,1,1,1,1,1,1,1}};

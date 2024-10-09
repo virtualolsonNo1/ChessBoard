@@ -265,13 +265,12 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
     
     // volatile int len = hUsbDeviceFS.ep_out;
 
-    game.currentMove->receivedLightData = true;
-    game.currentMove->lightsOn = false;
   } else if (prevArr && prevID == 4) {
     prevID = 255;
     prevArr = false;
     memcpy(&game.currentMove->lightState[7][7], hUsbDeviceFS.pClassData, 1);
     volatile int x = 1;
+    game.currentMove->receivedLightData = true;
   }
   
 
