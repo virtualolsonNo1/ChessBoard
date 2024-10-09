@@ -93,9 +93,21 @@ USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint32_t*)&clockModeReport, 7);
 HAL_Delay(100);
 
 clockModeReport.reportId = 3;
-clockModeReport.report3.reset = 0;
+clockModeReport.report3.reset = 0x7 << 3 | 0x3;
 USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint8_t*)&clockModeReport, 2); 
 
+HAL_Delay(100);
+
+USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS);
+
+HAL_Delay(10);
+updateLights();
+
+HAL_Delay(5);
+
+clockModeReport.reportId = 3;
+clockModeReport.report3.reset = 0;
+USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint8_t*)&clockModeReport, 2); 
 // HAL_Delay(500);
 // // Move 7
 // uint8_t arr15[8][8] = {{1,0,1,1,1,1,1,1},{1,1,1,1,0,1,1,1},{0,0,0,0,0,0,0,0},{0,0,0,0,1,0,0,0},{0,0,0,0,1,0,0,0},{0,0,0,0,0,0,0,0},{1,1,1,1,0,1,1,1},{1,1,1,1,1,0,0,1}};

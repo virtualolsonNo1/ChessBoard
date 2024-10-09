@@ -9,6 +9,8 @@
 
 extern HIDClockModeReports clockModeReport;
 extern USBD_HandleTypeDef hUsbDeviceFS;
+extern SPI_HandleTypeDef hspi1;
+extern struct GameState game;
 
 void initTime(struct GameState* game) {
     //initialize the display with the starting time for both players
@@ -171,4 +173,34 @@ void updateMoveShit(struct GameState* game) {
         }
     }
     }
+    
+}
+
+
+void convert2DArrayToBitarray(const uint8_t input[8][8], uint8_t output[8]) {
+    for (int i = 0; i < 8; i++) {
+        output[i] = 0;
+        for (int j = 0; j < 8; j++) {
+            if (input[i][j] != 0) {
+                output[i] |= (1 << j);
+            }
+        }
+    }
+}
+
+
+void updateLights() {
+   if (game.currentMove->receivedLightData && !(game.currentMove->lightsOn)) {
+        uint8_t lights[8];
+        convert2DArrayToBitarray(game.currentMove->lightState, lights);       
+
+      volatile int test = HAL_SPI_Transmit(&hspi1, (uint8_t *)lights, 8, 10000);
+      while(!(SPI1->SR & 0b10)) {}
+
+      //after transmitting LED data to shift registers, assert and de-assert load pin to display those values
+      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
+      while(!(GPIOA->ODR & GPIO_PIN_10)) {}
+      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
+      while((GPIOA->ODR & GPIO_PIN_10)) {}
+   } 
 }

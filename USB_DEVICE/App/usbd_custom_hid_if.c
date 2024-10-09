@@ -22,7 +22,9 @@
 #include "usbd_custom_hid_if.h"
 
 /* USER CODE BEGIN INCLUDE */
-
+#include "string.h"
+#include "usbd_customhid.h"
+#include "game.h"
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -31,6 +33,9 @@
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
+
+extern struct GameState game;
+
 
 /* USER CODE END PV */
 
@@ -217,6 +222,22 @@ static int8_t CUSTOM_HID_DeInit_FS(void)
   /* USER CODE END 5 */
 }
 
+
+void convert1DArrayTo2DArray(uint8_t *input, uint8_t output[8][8]) {
+    int index = 0;
+    
+    for (int i = 0; i < 8; i++) {
+        for (int j = 0; j < 8; j++) {
+            output[i][j] = input[index++];
+        }
+    }
+}
+
+
+uint8_t prevID = 255;
+bool prevArr = false;
+uint8_t receivedData[65];
+
 /**
   * @brief  Manage the CUSTOM HID class events
   * @param  event_idx: Event index
@@ -234,7 +255,29 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
   {
     return -1;
   }
+  
+  // if the report ID is 4, copy the data into the receiveData buffer
+  if (event_idx == 4) {
+    prevID = 4;
+    prevArr = true;
+    memcpy(receivedData, hUsbDeviceFS.pClassData + 1, sizeof(receivedData) - 1);
+    convert1DArrayTo2DArray(receivedData, game.currentMove->lightState);
+    
+    // volatile int len = hUsbDeviceFS.ep_out;
 
+    game.currentMove->receivedLightData = true;
+    game.currentMove->lightsOn = false;
+  } else if (prevArr && prevID == 4) {
+    prevID = 255;
+    prevArr = false;
+    memcpy(&game.currentMove->lightState[7][7], hUsbDeviceFS.pClassData, 1);
+    volatile int x = 1;
+  }
+  
+
+  // convert 64 byte array into 8x8 2d array
+
+  volatile int x = 1;
   return (USBD_OK);
   /* USER CODE END 6 */
 }
