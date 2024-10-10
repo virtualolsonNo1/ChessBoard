@@ -58,6 +58,7 @@ struct GameState {
     bool isWhiteMove;
     struct MoveState* currentMove;
     uint8_t previousState[8][8];
+    unsigned char previousStateChar[8][8];
     //TODO: PROBABLY WANT TO ADD BACK FOR NO CLOCK MODE!!!
     // char chessBoard[8][8];
     uint8_t currentBoardState[8][8];
@@ -67,4 +68,7 @@ void initTime(struct GameState* game);
 void changeTimeControl(struct GameState* game);
 void updateMoveShit(struct GameState* game);
 void resetGame(struct GameState* game);
+void updateReceivedLights();
 void updateLights();
+void lightsOff();
+void checkStartingSquares();

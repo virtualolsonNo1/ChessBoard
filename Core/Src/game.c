@@ -6,11 +6,15 @@
 #include "usb.h"
 #include "usbd_def.h"
 #include "usbd_customhid.h"
+#include <ctype.h>
+
 
 extern HIDClockModeReports clockModeReport;
 extern USBD_HandleTypeDef hUsbDeviceFS;
 extern SPI_HandleTypeDef hspi1;
 extern struct GameState game;
+
+uint8_t lightsOffArr[8][8] = {0};
 
 void initTime(struct GameState* game) {
     //initialize the display with the starting time for both players
@@ -110,8 +114,21 @@ void resetGame(struct GameState* game) {
         {1, 1, 1, 1, 1, 1, 1, 1},
         {1, 1, 1, 1, 1, 1, 1, 1}
       };
+      // create buffer to store state of board and initialize game struct
+      char newGame[8][8] = {
+            {'r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'},
+            {'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'},
+            {0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0},
+            {'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'},
+            {'R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'}
+        };
 
+      // reset binary and character state of board for potential next game
       memcpy(game->previousState, previousState, 8 * 8 * sizeof(previousState[0][0]));
+      memcpy(game->previousStateChar, newGame, 8 * 8 * sizeof(previousState[0][0]));
 
     //reset ARR to correct value
     __HAL_TIM_SET_AUTORELOAD(game->player1->clock.timer, game->timeControl);
@@ -121,57 +138,68 @@ void resetGame(struct GameState* game) {
     
     // send reset game report to desktop app
     clockModeReport.reportId = 3;
-    clockModeReport.report3.reset = 1;
+    clockModeReport.report3.reset = 0;
     USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint32_t*)&clockModeReport, 2);
-    // HAL_Delay(50);
     
     return;
 }
 
 void updateMoveShit(struct GameState* game) {
-    if(game->gameStarted) {
     for(int i = 0; i < 8; i++) {
         for(int j = 0; j < 8; j++) {
             if(!game->currentMove->firstPiecePickup && game->previousState[i][j] == 1 && game->currentBoardState[i][j] == 0) {
-                //first piece was picked up!!!
-                // uint8_t temp [8][8];
-                // memcpy(&temp, &game->previousState, 8 * 8 * sizeof(game->previousState[0][0]));
-                // temp[i][j] = 0;
-                // memcpy(&game->currentMove->firstPickupState, &temp, 8 * 8 * sizeof(temp[0][0]));
+                // update square info for picked up piece
                 clockModeReport.firstPickupRow = i;
                 clockModeReport.firstPickupCol = j;
                 game->currentMove->firstPiecePickup = true;
+                
+                if ((game->isWhiteMove && isupper(game->previousStateChar[i][j])) || (!game->isWhiteMove && islower(game->previousStateChar[i][j]))) {
+                    clockModeReport.reportId = 4;
+                    clockModeReport.report3.reset = i << 3 | j;
+                    USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint32_t*)&clockModeReport, 2);
+                    USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS);
+                    
+                }
                 //TODO: test if this code is fixed for picking up a piece, moving it over a square, then moving it to a different square
             } else if(game->currentMove->firstPiecePickup && !game->currentMove->secondPiecePickup && !game->currentMove->isFinalState && !(i == clockModeReport.firstPickupRow && j == clockModeReport.firstPickupCol) && game->previousState[i][j] == 1 && game->currentBoardState[i][j] == 0) {
+                // update square info for picked up piece
                 clockModeReport.report2.secondPickupRow = i;
                 clockModeReport.report2.secondPickupCol = j;
-                // second piece was picked up
-                // uint8_t temp [8][8];
-                // memcpy(&temp, &game->currentMove->firstPickupState, 8 * 8 * sizeof(game->currentMove->firstPickupState[0][0]));
-                // temp[i][j] = 0;
-                // memcpy(&game->currentMove->secondPickupState, &temp, 8 * 8 * sizeof(temp[0][0]));
                 game->currentMove->secondPiecePickup = true;
             } else if(game->currentMove->isFinalState) {
                 for(int i = 0; i < 8; i++) {
                     for(int j = 0; j < 8; j++) {
                         if (game->previousState[i][j] == 0 && game->currentBoardState[i][j] == 1) {
-                            clockModeReport.report2.finalPickupRow = i;
-                            clockModeReport.report2.finalPickupCol = j;
+                            if (game->currentMove->secondPiecePickup) {
+                                clockModeReport.report2.finalPickupRow = i;
+                                clockModeReport.report2.finalPickupCol = j;
+                            } else {
+                                clockModeReport.report1.finalPickupRow = i;
+                                clockModeReport.report1.finalPickupCol = j;
+                                
+                            }
                         }
                     }
                 }
-                //button was hit to finish this move and change to other player's move, so save final state and update previous state to current state
-                if (!game->currentMove->secondPiecePickup) {
-                // memcpy(clockModeReport.secondPickupState, game->currentBoardState, 8 * 8 * sizeof(game->previousState[0][0]));
-                } else {
-                // memcpy(clockModeReport.thirdPickupState, game->currentBoardState, 8 * 8 * sizeof(game->previousState[0][0]));
-                }
+                
+                // turn off lights for potential moves for piece
+                lightsOff();
+
+                // update previous state to that of current board
                 memcpy(game->previousState, game->currentBoardState, 8 * 8 * sizeof(game->previousState[0][0]));
+                
+                // update isWhiteMove to correctly reflect who's turn it is
+                game->isWhiteMove = !game->isWhiteMove;
+            
+            // check to see if after first piece is picked up, it's put back down to instead pick up another piece for their move
+            } else if (game->currentMove->firstPiecePickup && game->currentBoardState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 1) {
+                game->currentMove->firstPiecePickup = false;
+                lightsOff();
             }
+            // TODO: MAKE IT SO WHEN PIECE SLID OR MOVED ONTO A SQUARE THAT IT'S ALLOWED TO, ONLY THAT AND STARTING SQUARE STAY LIT
 
 
-        }
-    }
+        } 
     }
     
 }
@@ -189,7 +217,7 @@ void convert2DArrayToBitarray(const uint8_t input[8][8], uint8_t output[8]) {
 }
 
 
-void updateLights() {
+void updateReceivedLights() {
    if (game.currentMove->receivedLightData && !(game.currentMove->lightsOn)) {
         uint8_t lights[8];
         convert2DArrayToBitarray(game.currentMove->lightState, lights);       
@@ -203,4 +231,51 @@ void updateLights() {
       HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
       while((GPIOA->ODR & GPIO_PIN_10)) {}
    }
+}
+
+void updateLights() {
+    uint8_t eightBitLights[8];
+    convert2DArrayToBitarray(game.currentMove->lightState, eightBitLights);       
+
+    volatile int test = HAL_SPI_Transmit(&hspi1, (uint8_t *)eightBitLights, 8, 10000);
+    while(!(SPI1->SR & 0b10)) {}
+
+    //after transmitting LED data to shift registers, assert and de-assert load pin to display those values
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
+    while(!(GPIOA->ODR & GPIO_PIN_10)) {}
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
+    while((GPIOA->ODR & GPIO_PIN_10)) {}
+}
+
+
+void lightsOff() {
+    uint8_t lightsOff[8][8] = {0};
+    memcpy(game.currentMove->lightState, lightsOffArr, 64);
+    updateLights();
+}
+
+void checkStartingSquares() {
+    bool lightsNeedUpdated = false;
+    for(int i = 0; i < 2; i++) {
+        for(int j = 0; j < 8; j++) {
+            if (game.currentBoardState[i][j] == 0 && game.currentMove->lightState[i][j] == 0) {
+                game.currentMove->lightState[i][j] = 1;
+                lightsNeedUpdated = true;
+            }
+        }
+    }
+
+    for(int i = 6; i < 8; i++) {
+        for(int j = 0; j < 8; j++) {
+            if (game.currentBoardState[i][j] == 0 && game.currentMove->lightState[i][j] == 0) {
+                game.currentMove->lightState[i][j] = 1;
+                lightsNeedUpdated = true;
+            }
+        }
+    }
+    
+    if (lightsNeedUpdated) {
+        updateLights();
+    }
+    
 }

@@ -60,6 +60,7 @@ TIM_HandleTypeDef htim5;
 
 /* USER CODE BEGIN PV */
 extern USBD_HandleTypeDef hUsbDeviceFS;
+extern uint8_t lightsOffArr[8][8];
 
 /* USER CODE END PV */
 
@@ -89,15 +90,6 @@ struct GameState game;
 // typedef struct report2 secondReport;
 HIDClockModeReports clockModeReport;
 
-typedef struct __attribute__((packed))
-{
-	uint8_t button;
-	int8_t mouse_x;
-	int8_t mouse_y;
-	int8_t wheel;
-} mouseHID;
-
-mouseHID mousehid = {0, 0, 0, 0};
 
 void updateTime() {
   //grab count value from CNT register of the active player's timer
@@ -138,26 +130,8 @@ void updateTime() {
 }
 
 
+// TODO: MAKE THSI SHIT!!!!!!!!
 // void flipBoardArrays(struct MoveState* move) {
-
-
-//   // coded this while not fully sober, I feel like this was dumb, but can be fixed later as it works
-//   uint8_t temp[8][8] = {0};
-
-//   for(int i = 0; i < 8; i++) {
-//     temp[7 - i][0] = move->firstPickupState[i][7];
-//     temp[7 - i][1] = move->firstPickupState[i][6];
-//     temp[7 - i][2] = move->firstPickupState[i][5];
-//     temp[7 - i][3] = move->firstPickupState[i][4];
-//     temp[7 - i][4] = move->firstPickupState[i][3];
-//     temp[7 - i][5] = move->firstPickupState[i][2];
-//     temp[7 - i][6] = move->firstPickupState[i][1];
-//     temp[7 - i][7] = move->firstPickupState[i][0];
-    
-//   }
-
-//   memcpy(&move->firstPickupState, &temp, 8 * 8 * sizeof(uint8_t));
-
 // }
 
 
@@ -250,18 +224,6 @@ int main(void)
   game = (struct GameState){&player1, &player1, &player2, false, ONE_MINUTE_LIMIT, false, false, &currentMove};
   memcpy(game.previousState, previousState, 8 * 8 * sizeof(previousState[0][0]));
 
-  //create buffer to store state of board and initialize game struct
-  //TODO: might want to add back later!!!
-  // char newGame[8][8] = {
-  //       {'r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'},
-  //       {'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'},
-  //       {0, 0, 0, 0, 0, 0, 0, 0},
-  //       {0, 0, 0, 0, 0, 0, 0, 0},
-  //       {0, 0, 0, 0, 0, 0, 0, 0},
-  //       {0, 0, 0, 0, 0, 0, 0, 0},
-  //       {'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'},
-  //       {'R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'}
-  //   };
 
   // memcpy(&game.chessBoard, &newGame, 8 * 8 * sizeof(char));
   
@@ -388,8 +350,13 @@ int main(void)
 
     //TODO: update to send better data later
 
-    //calculate if move occurred and capture data related to said move
+    // if (game.gameStarted) {
+    // //calculate if move occurred and capture data related to said move
     // updateMoveShit(&game);
+    // } else {
+    //   // light up squares where pieces aren't but should be before start of game
+    //   checkStartingSquares();
+    // }
 
     //if current move is finished, transmit said data to teh desktop app
     if(game.currentMove->isFinalState && game.gameStarted) {
@@ -425,8 +392,12 @@ int main(void)
 
     volatile bool sendTest = true;
     if (sendTest) {
-      HAL_Delay(2000);
+      HAL_Delay(1000);
       sendTestGame();
+
+      HAL_Delay(1000);
+      lightsOff();
+
     }
     
     //TODO: remove testSend shit later once better ironed out way to send data is made
@@ -466,39 +437,6 @@ int main(void)
 
     uint8_t numArrays = 2;
 
-    // char test[11] = "MovePlayed\n";
-    // char newline[1] = "\n";
-    // volatile int ret1 = CDC_Transmit_FS(test, sizeof(test));
-    // HAL_Delay(20);
-
-    // volatile int ret2 = CDC_Transmit_FS(&numArrays , 1);
-    // HAL_Delay(20);
-
-    // volatile int ret3 = CDC_Transmit_FS((uint8_t *) &arr3 , 64);
-    // HAL_Delay(20);
-
-    // volatile int ret4 = CDC_Transmit_FS((uint8_t *) &arr2 , 64);
-
-    // //must be 8 so has \0 for strcmp to use
-    // char test2[8] = "";
-    // USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &test2[0]);
-    // volatile int z = USBD_CDC_ReceivePacket(&hUsbDeviceFS);
-    // HAL_Delay(20);
-
-    // if(strcmp(test2, "resend\n") == 0) {
-    //   char test[11] = "MovePlayed\n";
-    //   char newline[1] = "\n";
-    //   volatile int ret1 = CDC_Transmit_FS(test, sizeof(test));
-    //   HAL_Delay(20);
-
-    //   volatile int ret2 = CDC_Transmit_FS(&numArrays , 1);
-    //   HAL_Delay(20);
-
-    //   volatile int ret3 = CDC_Transmit_FS((uint8_t *) &arr1 , 64);
-    //   HAL_Delay(20);
-
-    //   volatile int ret4 = CDC_Transmit_FS((uint8_t *) &arr2 , 64);
-    // }
 
 
 

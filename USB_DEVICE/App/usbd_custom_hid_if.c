@@ -257,20 +257,30 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
   }
   
   // if the report ID is 4, copy the data into the receiveData buffer
-  if (event_idx == 4) {
-    prevID = 4;
+  if (event_idx == 4 || event_idx == 5) {
+    prevID = event_idx;
     prevArr = true;
     memcpy(receivedData, hUsbDeviceFS.pClassData + 1, sizeof(receivedData) - 1);
-    convert1DArrayTo2DArray(receivedData, game.currentMove->lightState);
+    if (event_idx == 4)
+      convert1DArrayTo2DArray(receivedData, game.currentMove->lightState);
+    else
+      convert1DArrayTo2DArray(receivedData, game.previousStateChar);
+      
     
     // volatile int len = hUsbDeviceFS.ep_out;
 
+  } else if (prevArr && prevID == 5) {
+    prevID = 255;
+    prevArr = false;
+    memcpy(&game.previousStateChar[7][7], hUsbDeviceFS.pClassData, 1);
+    volatile int x = 1;
   } else if (prevArr && prevID == 4) {
     prevID = 255;
     prevArr = false;
     memcpy(&game.currentMove->lightState[7][7], hUsbDeviceFS.pClassData, 1);
     volatile int x = 1;
     game.currentMove->receivedLightData = true;
+    updateReceivedLights();
   }
   
 

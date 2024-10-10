@@ -11,6 +11,8 @@
 - finally the idea came up that when a piece is picked up to light up its possible moves, which prompted me to add 64 LEDs and another set of shift registers, this time serial in parallel out as opposed to parallel in serial out
 - Since at the time, I had been working with an stm32f411 microcontroller for my project at work, I used this same microcontroller for this project as to further learn
 - Similarly, this was first implemented using FreeRTOS, as I was comparing FreeRTOS and Zephyr for another work project on an NXP dev board when it comes to speed, ease of day-to-day coding, implementation differences (preemptive prioritization and time slicing vs tickless, event driven RTOS defaulting to cooperative threading), etc., which was very easy to add using ST's CubeMX tool, but was later removed as it was unnecessary for this bare metal project
+- switched from CDC to HID device with custom report descriptor
+- 
 
 # MY CODE VS LIBRARIES AND GENERATED CODE
 - STM32CubeMX was used for pin muxing and the initial setup of each peripheral, which is why any code between "//USER CODE END" and "//USER CODE BEGIN" is auto generated, and any code not put between the "//USER CODE BEGIN" and "//USER CODE END" comments will be removed if any updates are made on CubeMX and code is regenerated
@@ -18,13 +20,27 @@
 - Other than this, I wrote all of the code used in this code base
 
 # REMAINING TODOs
-- Get USB HID working
-    - Get desktop app and 
-- Get LEDs communicating with desktop app
+# THINGS TO TEST AT OFFICE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+- playing normal game over HID
+- lights when piece picked up, put down, another piece picked up, other team piece picked up, etc. 
+- start lights under missing pieces
+- state of board resets properly when reset game hit
+
+# OTHER SHIT!
+- if pick up take piece that isn't allowed, blink error???????????????????????????????????????
 - Add in extra functionality
     - no clock mode
-    - different light features (i.e. light up before pieces are in place, no light up mode, etc)
+    - increment???????????
+    - no light mode???????????????????
     - opening practice mode, where in app you can choose opening and it'll give you a random position from which you can place pieces on correct lit up spots and play what you think best move is
+    - fix having to auto queen
+    - can play white as either side dynamically depending on which side of clock hit first
+- make webapp or at least make it look prettier with django or something
+    - live display before game of what pieces are there
+    - real time mode on desktop app?
+- redo PCB and Design fancy shit???
+    - add crystal, maybe fix LED shift registers to match hall effect ones, actual decoupling caps, better mounting holes
+
 
 # USE CASE
 - Once finished, the chess board will function as follows:

@@ -104,41 +104,11 @@ HAL_Delay(100);
 USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS);
 
 HAL_Delay(10);
-updateLights();
 
 HAL_Delay(5);
 
 clockModeReport.reportId = 3;
 clockModeReport.report3.reset = 0;
 USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint8_t*)&clockModeReport, 2); 
-// HAL_Delay(500);
-// // Move 7
-// uint8_t arr15[8][8] = {{1,0,1,1,1,1,1,1},{1,1,1,1,0,1,1,1},{0,0,0,0,0,0,0,0},{0,0,0,0,1,0,0,0},{0,0,0,0,1,0,0,0},{0,0,0,0,0,0,0,0},{1,1,1,1,0,1,1,1},{1,1,1,1,1,0,0,1}};
-// uint8_t arr16[8][8] = {{1,0,1,1,1,1,1,1},{1,1,1,1,0,1,1,1},{0,0,0,0,0,0,0,0},{0,0,0,0,1,0,0,0},{0,0,0,0,1,0,0,0},{0,0,0,0,0,0,0,0},{1,1,1,1,1,1,1,1},{1,1,1,1,1,0,0,1}};
-// clockModeReport.firstPickupRow = 7;
-// clockModeReport.firstPickupCol = 5;
-// memcpy(clockModeReport.secondPickupState, arr16, sizeof(arr16));
-// sendReport(1, 67);
-
-// // Move 8
-// uint8_t arr17[8][8] = {{1,0,1,1,1,0,1,1},{1,1,1,1,0,1,1,1},{0,0,0,0,0,0,0,0},{0,0,0,0,1,0,0,0},{0,0,0,0,1,0,0,0},{0,0,0,0,0,0,0,0},{1,1,1,1,1,1,1,1},{1,1,1,1,1,0,0,1}};
-// uint8_t arr18[8][8] = {{1,0,1,1,1,0,1,1},{1,1,1,1,1,1,1,1},{0,0,0,0,0,0,0,0},{0,0,0,0,1,0,0,0},{0,0,0,0,1,0,0,0},{0,0,0,0,0,0,0,0},{1,1,1,1,1,1,1,1},{1,1,1,1,1,0,0,1}};
-// clockModeReport.firstPickupRow = 0;
-// clockModeReport.firstPickupCol = 5;
-// clockModeReport.secondPickupRow = 1;
-// clockModeReport.secondPickupCol = 4;
-// memcpy(clockModeReport.thirdPickupState, arr18, sizeof(arr18));
-// sendReport(2, 69);
-
-// // Move 9
-// uint8_t arr19[8][8] = {{1,0,1,1,1,0,1,1},{1,1,1,1,1,1,1,1},{0,0,0,0,0,0,0,0},{0,0,0,0,1,0,0,0},{0,0,0,0,1,0,0,0},{0,0,0,0,0,0,0,0},{1,1,1,1,1,1,1,1},{1,1,1,1,0,0,0,1}};
-// uint8_t arr20[8][8] = {{1,0,1,1,1,0,1,1},{1,1,1,1,1,1,1,1},{0,0,0,0,0,0,0,0},{0,0,0,0,1,0,0,0},{0,0,0,0,1,0,0,0},{0,0,0,0,0,0,0,0},{1,1,1,1,1,1,1,1},{1,1,1,1,0,0,0,0}};
-// uint8_t arr21[8][8] = {{1,0,1,1,1,0,1,1},{1,1,1,1,1,1,1,1},{0,0,0,0,0,0,0,0},{0,0,0,0,1,0,0,0},{0,0,0,0,1,0,0,0},{0,0,0,0,0,0,0,0},{1,1,1,1,1,1,1,1},{1,1,1,1,0,1,1,0}};
-// clockModeReport.firstPickupRow = 7;
-// clockModeReport.firstPickupCol = 4;
-// clockModeReport.secondPickupRow = 7;
-// clockModeReport.secondPickupCol = 7;
-// memcpy(clockModeReport.thirdPickupState, arr21, sizeof(arr21));
-// sendReport(2, 69)
 
 }
