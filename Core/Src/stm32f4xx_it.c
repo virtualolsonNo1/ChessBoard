@@ -222,6 +222,7 @@ void EXTI1_IRQHandler(void)
         game.gameStarted = true;
        } else {
         game.currentMove->isFinalState = true;
+        game.isWhiteMove = !game.isWhiteMove;
       }
     }
     HAL_TIM_Base_Start(&htim2);

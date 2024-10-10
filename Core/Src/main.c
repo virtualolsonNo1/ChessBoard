@@ -219,10 +219,22 @@ int main(void)
         {1, 1, 1, 1, 1, 1, 1, 1},
         {1, 1, 1, 1, 1, 1, 1, 1}
       };
+    // create buffer to store state of board and initialize game struct
+    char newGame[8][8] = {
+          {'r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'},
+          {'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'},
+          {0, 0, 0, 0, 0, 0, 0, 0},
+          {0, 0, 0, 0, 0, 0, 0, 0},
+          {0, 0, 0, 0, 0, 0, 0, 0},
+          {0, 0, 0, 0, 0, 0, 0, 0},
+          {'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'},
+          {'R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'}
+      };
 
   //initialize game
   game = (struct GameState){&player1, &player1, &player2, false, ONE_MINUTE_LIMIT, false, false, &currentMove};
   memcpy(game.previousState, previousState, 8 * 8 * sizeof(previousState[0][0]));
+  memcpy(game.previousStateChar, newGame, 8 * 8 * sizeof(newGame[0][0]));
 
 
   // memcpy(&game.chessBoard, &newGame, 8 * 8 * sizeof(char));
@@ -231,6 +243,7 @@ int main(void)
   initTime(&game);
 
   int count = 0;
+  lightsOff();
   while (1)
   {
     /* USER CODE END WHILE */
@@ -286,7 +299,7 @@ int main(void)
 
     // mousehid.button = 1;
     // USBD_HID_SendReport(&hUsbDeviceFS, &mousehid, sizeof (mousehid));
-    HAL_Delay (50);
+    HAL_Delay (10);
 
 
     //de-assert and re-assert load pin to load values into register's D flip flops
@@ -312,7 +325,10 @@ int main(void)
 
     }
 
-    // TODO: remove this later once hall effect sensor fixed!!!!!!!!!!!!!!!!!!!!!!!!!
+    // TODO: remove this later once hall effect sensors fixed!!!!!!!!!!!!!!!!!!!!!!!!!
+    // TODO: FIGURE OUT WHY ALL THESE ARE FUCKED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    game.currentBoardState[6][1] = 1;
+    game.currentBoardState[7][1] = 1;
     game.currentBoardState[3][2] = 0;
 
     volatile int x = 8;
@@ -350,26 +366,26 @@ int main(void)
 
     //TODO: update to send better data later
 
-    // if (game.gameStarted) {
-    // //calculate if move occurred and capture data related to said move
-    // updateMoveShit(&game);
-    // } else {
-    //   // light up squares where pieces aren't but should be before start of game
-    //   checkStartingSquares();
-    // }
+    if (game.gameStarted) {
+    //calculate if move occurred and capture data related to said move
+    updateMoveShit(&game);
+    } else {
+      // light up squares where pieces aren't but should be before start of game
+      checkStartingSquares();
+    }
 
     //if current move is finished, transmit said data to teh desktop app
     if(game.currentMove->isFinalState && game.gameStarted) {
       
-      // if (game.currentMove->secondPiecePickup) {
+      if (game.currentMove->secondPiecePickup) {
         
-      //   clockModeReport.reportId = 2;
-      //   USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 7);
-      // } else {
-      //   clockModeReport.reportId = 1;
+        clockModeReport.reportId = 2;
+        USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 7);
+      } else {
+        clockModeReport.reportId = 1;
 
-      //   USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 5);
-      // }
+        USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 5);
+      }
 
     volatile int x = 1;
     
@@ -390,7 +406,7 @@ int main(void)
     }
     
 
-    volatile bool sendTest = true;
+    volatile bool sendTest = false;
     if (sendTest) {
       HAL_Delay(1000);
       sendTestGame();
@@ -400,50 +416,6 @@ int main(void)
 
     }
     
-    //TODO: remove testSend shit later once better ironed out way to send data is made
-    volatile bool testSend = false;
-    if (testSend) {
-      uint8_t arr1[8][8] = {
-            {1, 1, 1, 1, 1, 1, 1, 1},
-        {1, 1, 1, 1, 1, 1, 1, 1},
-        {0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0},
-        {1, 1, 1, 1, 0, 1, 1, 1},
-        {1, 1, 1, 1, 1, 1, 1, 1}
-      };
-       uint8_t arr2[8][8] = {
-            {1, 1, 1, 1, 1, 1, 1, 1},
-        {1, 1, 1, 1, 1, 1, 1, 1},
-        {0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 1, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0},
-        {1, 1, 1, 1, 0, 1, 1, 1},
-        {1, 1, 1, 1, 1, 1, 1, 1}
-      };
-
-       uint8_t arr3[8][8] = {
-        {0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0}
-      };
-
-    uint8_t numArrays = 2;
-
-
-
-
-    volatile int x = 1;
-
-    }
-
   }
   /* USER CODE END 3 */
 }

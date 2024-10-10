@@ -13,6 +13,7 @@ extern HIDClockModeReports clockModeReport;
 extern USBD_HandleTypeDef hUsbDeviceFS;
 extern SPI_HandleTypeDef hspi1;
 extern struct GameState game;
+HIDClockModeReports lightReport;
 
 uint8_t lightsOffArr[8][8] = {0};
 
@@ -140,6 +141,7 @@ void resetGame(struct GameState* game) {
     clockModeReport.reportId = 3;
     clockModeReport.report3.reset = 0;
     USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint32_t*)&clockModeReport, 2);
+    lightsOff();
     
     return;
 }
@@ -154,34 +156,44 @@ void updateMoveShit(struct GameState* game) {
                 game->currentMove->firstPiecePickup = true;
                 
                 if ((game->isWhiteMove && isupper(game->previousStateChar[i][j])) || (!game->isWhiteMove && islower(game->previousStateChar[i][j]))) {
-                    clockModeReport.reportId = 4;
-                    clockModeReport.report3.reset = i << 3 | j;
-                    USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint32_t*)&clockModeReport, 2);
+                    lightReport.reportId = 3;
+                    lightReport.report3.reset = i << 3 | j;
+                    USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint32_t*)&lightReport, 2);
                     USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS);
                     
                 }
+                return;
                 //TODO: test if this code is fixed for picking up a piece, moving it over a square, then moving it to a different square
             } else if(game->currentMove->firstPiecePickup && !game->currentMove->secondPiecePickup && !game->currentMove->isFinalState && !(i == clockModeReport.firstPickupRow && j == clockModeReport.firstPickupCol) && game->previousState[i][j] == 1 && game->currentBoardState[i][j] == 0) {
                 // update square info for picked up piece
                 clockModeReport.report2.secondPickupRow = i;
                 clockModeReport.report2.secondPickupCol = j;
+                clockModeReport.report2.finalPickupCol = 8;
+                clockModeReport.report2.finalPickupRow = 8;
                 game->currentMove->secondPiecePickup = true;
+                return;
             } else if(game->currentMove->isFinalState) {
-                for(int i = 0; i < 8; i++) {
-                    for(int j = 0; j < 8; j++) {
-                        if (game->previousState[i][j] == 0 && game->currentBoardState[i][j] == 1) {
-                            if (game->currentMove->secondPiecePickup) {
-                                clockModeReport.report2.finalPickupRow = i;
-                                clockModeReport.report2.finalPickupCol = j;
-                            } else {
-                                clockModeReport.report1.finalPickupRow = i;
-                                clockModeReport.report1.finalPickupCol = j;
-                                
-                            }
-                        }
+                    bool enteredOne = false;
+                // if it was a take, check to make sure piece was moved there
+                if (game->currentMove->secondPiecePickup) {
+                    // TODO: FIX THIS SO THAT YOU CAN PICK UP OPPONENT PIECE FIRST!!!!!!!!!!!!!!!!!!!!!
+                    if (game->currentBoardState[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 1) {
+                        enteredOne = true;
+                        
+                    } else if (game->previousState[i][j] == 0 && game->currentBoardState[i][j] == 1) {
+                        clockModeReport.report2.finalPickupRow = i;
+                        clockModeReport.report2.finalPickupCol = j;
+                        enteredOne = true;
+                                               
                     }
-                }
-                
+                } else {
+                    if (game->previousState[i][j] == 0 && game->currentBoardState[i][j] == 1) {
+                            clockModeReport.report1.finalPickupRow = i;
+                            clockModeReport.report1.finalPickupCol = j;
+                            enteredOne = true;
+                    }
+                }                     
+                if (enteredOne) {
                 // turn off lights for potential moves for piece
                 lightsOff();
 
@@ -189,12 +201,14 @@ void updateMoveShit(struct GameState* game) {
                 memcpy(game->previousState, game->currentBoardState, 8 * 8 * sizeof(game->previousState[0][0]));
                 
                 // update isWhiteMove to correctly reflect who's turn it is
-                game->isWhiteMove = !game->isWhiteMove;
+                return;
+                }
             
             // check to see if after first piece is picked up, it's put back down to instead pick up another piece for their move
-            } else if (game->currentMove->firstPiecePickup && game->currentBoardState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 1) {
+            } else if (game->currentMove->firstPiecePickup && !game->currentMove->secondPiecePickup && game->currentBoardState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 1) {
                 game->currentMove->firstPiecePickup = false;
                 lightsOff();
+                return;
             }
             // TODO: MAKE IT SO WHEN PIECE SLID OR MOVED ONTO A SQUARE THAT IT'S ALLOWED TO, ONLY THAT AND STARTING SQUARE STAY LIT
 
@@ -261,6 +275,9 @@ void checkStartingSquares() {
             if (game.currentBoardState[i][j] == 0 && game.currentMove->lightState[i][j] == 0) {
                 game.currentMove->lightState[i][j] = 1;
                 lightsNeedUpdated = true;
+            } else if (game.currentBoardState[i][j] == 1 && game.currentMove->lightState[i][j] == 1) {
+                game.currentMove->lightState[i][j] = 0;
+                lightsNeedUpdated = true;
             }
         }
     }
@@ -270,7 +287,11 @@ void checkStartingSquares() {
             if (game.currentBoardState[i][j] == 0 && game.currentMove->lightState[i][j] == 0) {
                 game.currentMove->lightState[i][j] = 1;
                 lightsNeedUpdated = true;
+            } else if (game.currentBoardState[i][j] == 1 && game.currentMove->lightState[i][j] == 1) {
+                game.currentMove->lightState[i][j] = 0;
+                lightsNeedUpdated = true;
             }
+
         }
     }
     
