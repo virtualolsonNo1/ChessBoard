@@ -42,7 +42,9 @@ struct MoveState {
     bool receivedLightData;
     bool secondPiecePickup;
     bool isFinalState;
+    uint8_t allPieceLights[8][8];
     uint8_t lightState[8][8];
+    bool pieceNewSquare;
     // uint8_t firstPickupState[8][8];
     // uint8_t secondPickupState[8][8];
     // uint8_t finalState[8][8];

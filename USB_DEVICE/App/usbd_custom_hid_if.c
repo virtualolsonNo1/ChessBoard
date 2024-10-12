@@ -278,6 +278,7 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
     prevID = 255;
     prevArr = false;
     memcpy(&game.currentMove->lightState[7][7], hUsbDeviceFS.pClassData, 1);
+    memcpy(game.currentMove->allPieceLights, game.currentMove->lightState, 64);
     volatile int x = 1;
     game.currentMove->receivedLightData = true;
     updateReceivedLights();

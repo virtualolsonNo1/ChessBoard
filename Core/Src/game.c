@@ -139,7 +139,7 @@ void resetGame(struct GameState* game) {
     
     // send reset game report to desktop app
     clockModeReport.reportId = 3;
-    clockModeReport.report3.reset = 0;
+    clockModeReport.report3.reset = 255;
     USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint32_t*)&clockModeReport, 2);
     lightsOff();
     
@@ -176,8 +176,9 @@ void updateMoveShit(struct GameState* game) {
                     bool enteredOne = false;
                 // if it was a take, check to make sure piece was moved there
                 if (game->currentMove->secondPiecePickup) {
+                    game->currentMove->pieceNewSquare = false;
                     // TODO: FIX THIS SO THAT YOU CAN PICK UP OPPONENT PIECE FIRST!!!!!!!!!!!!!!!!!!!!!
-                    if (game->currentBoardState[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 1) {
+                    if (game->currentBoardState[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 1 || game->currentBoardState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 1) {
                         enteredOne = true;
                         
                     } else if (game->previousState[i][j] == 0 && game->currentBoardState[i][j] == 1) {
@@ -199,17 +200,27 @@ void updateMoveShit(struct GameState* game) {
 
                 // update previous state to that of current board
                 memcpy(game->previousState, game->currentBoardState, 8 * 8 * sizeof(game->previousState[0][0]));
+                memset(game->currentMove->allPieceLights, 0, 64);
+                memset(game->currentMove->lightState, 0, 64);
                 
                 // update isWhiteMove to correctly reflect who's turn it is
                 return;
                 }
             
             // check to see if after first piece is picked up, it's put back down to instead pick up another piece for their move
-            } else if (game->currentMove->firstPiecePickup && !game->currentMove->secondPiecePickup && game->currentBoardState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 1) {
+            } else if (game->currentMove->firstPiecePickup && !game->currentMove->secondPiecePickup) {
+                if (game->currentBoardState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 1) {
                 game->currentMove->firstPiecePickup = false;
                 lightsOff();
                 return;
-            }
+                } else if (game->currentBoardState[i][j] == 1 && game->currentMove->allPieceLights[i][j] == 1 && game->previousState[i][j] == 0) {
+                    memset(game->currentMove->lightState, 0, 64);
+                    game->currentMove->lightState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] = 1;
+                    game->currentMove->lightState[i][j] = 1;
+                    updateLights();
+                } 
+            } 
+
             // TODO: MAKE IT SO WHEN PIECE SLID OR MOVED ONTO A SQUARE THAT IT'S ALLOWED TO, ONLY THAT AND STARTING SQUARE STAY LIT
 
 

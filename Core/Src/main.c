@@ -304,6 +304,7 @@ int main(void)
 
     //de-assert and re-assert load pin to load values into register's D flip flops
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
+    HAL_Delay(1);
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
 
     //transmit MISO data from shift registers into boardstate buffer
@@ -327,9 +328,9 @@ int main(void)
 
     // TODO: remove this later once hall effect sensors fixed!!!!!!!!!!!!!!!!!!!!!!!!!
     // TODO: FIGURE OUT WHY ALL THESE ARE FUCKED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    game.currentBoardState[6][1] = 1;
-    game.currentBoardState[7][1] = 1;
-    game.currentBoardState[3][2] = 0;
+    // game.currentBoardState[6][1] = 1;
+    // game.currentBoardState[7][1] = 1;
+    // game.currentBoardState[3][2] = 0;
 
     volatile int x = 8;
 
