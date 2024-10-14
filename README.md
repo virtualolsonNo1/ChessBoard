@@ -29,12 +29,17 @@
 # OTHER SHIT!
 - if pick up take piece that isn't allowed, blink error???????????????????????????????????????
 - Add in extra functionality
+    - FIX RESET BUG???????????????????????????!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        - i.e. if error on desktop app, weird firmware bug when reset??? Or whatever causes weird firmware bug that makes it so you have to restart chessbaord for it to work
     - no clock mode
     - increment???????????
     - no light mode???????????????????
     - opening practice mode, where in app you can choose opening and it'll give you a random position from which you can place pieces on correct lit up spots and play what you think best move is
     - fix having to auto queen
     - can play white as either side dynamically depending on which side of clock hit first
+    - pick up piece it animates  moves outward
+    - second piece light functionality and put back down
+    - timer no clock mode
 - make webapp or at least make it look prettier with django or something
     - live display before game of what pieces are there
     - real time mode on desktop app?

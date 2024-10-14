@@ -130,6 +130,9 @@ void resetGame(struct GameState* game) {
       // reset binary and character state of board for potential next game
       memcpy(game->previousState, previousState, 8 * 8 * sizeof(previousState[0][0]));
       memcpy(game->previousStateChar, newGame, 8 * 8 * sizeof(previousState[0][0]));
+      memset(game->currentMove->allPieceLights, 0, 64);
+      memset(game->currentMove->lightState, 0, 64);
+      game->currentMove->lightsOn = false;
 
     //reset ARR to correct value
     __HAL_TIM_SET_AUTORELOAD(game->player1->clock.timer, game->timeControl);
