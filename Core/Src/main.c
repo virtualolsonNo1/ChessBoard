@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "cmsis_os.h"
 #include "usb_device.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -58,9 +59,50 @@ SPI_HandleTypeDef hspi2;
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim5;
 
+/* Definitions for defaultTask */
+osThreadId_t defaultTaskHandle;
+const osThreadAttr_t defaultTask_attributes = {
+  .name = "defaultTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for updateTimeTask */
+osThreadId_t updateTimeTaskHandle;
+const osThreadAttr_t updateTimeTask_attributes = {
+  .name = "updateTimeTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for updateMoveTask */
+osThreadId_t updateMoveTaskHandle;
+const osThreadAttr_t updateMoveTask_attributes = {
+  .name = "updateMoveTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for animLightsTask */
+osThreadId_t animLightsTaskHandle;
+const osThreadAttr_t animLightsTask_attributes = {
+  .name = "animLightsTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for readHallTask */
+osThreadId_t readHallTaskHandle;
+const osThreadAttr_t readHallTask_attributes = {
+  .name = "readHallTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for animateMutex */
+osMutexId_t animateMutexHandle;
+const osMutexAttr_t animateMutex_attributes = {
+  .name = "animateMutex"
+};
 /* USER CODE BEGIN PV */
 extern USBD_HandleTypeDef hUsbDeviceFS;
 extern uint8_t lightsOffArr[8][8];
+osSemaphoreId_t animateLightsMutex;
 
 /* USER CODE END PV */
 
@@ -71,6 +113,12 @@ static void MX_SPI1_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM5_Init(void);
+void StartDefaultTask(void *argument);
+void updateTime(void *argument);
+void updateMove(void *argument);
+void animateLights(void *argument);
+void readHall(void *argument);
+
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -91,7 +139,7 @@ struct GameState game;
 HIDClockModeReports clockModeReport;
 
 
-void updateTime() {
+void updateTimeOld() {
   //grab count value from CNT register of the active player's timer
     int count = game.activePlayer->clock.timer->Instance->CNT;
 
@@ -177,6 +225,10 @@ int main(void)
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
 
 
+  const osMutexAttr_t myMutex_attributes = {
+    .name = "animateLightsMutex"
+  };
+  animateLightsMutex = osSemaphoreNew(1, 0, animateLightsMutex);
 
   //TODO: init SPI and what not
   for(int i = 0; i < 8; i++) {
@@ -184,12 +236,6 @@ int main(void)
   }
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
-    // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
-
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
 
   //initialize clocks properly, enabling proper interrupts
   TIM2->SR &= ~(TIM_SR_UIF_Msk);
@@ -244,6 +290,62 @@ int main(void)
 
   int count = 0;
   lightsOff();
+    // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+
+  /* USER CODE END 2 */
+
+  /* Init scheduler */
+  osKernelInitialize();
+  /* Create the mutex(es) */
+  /* creation of animateMutex */
+  animateMutexHandle = osMutexNew(&animateMutex_attributes);
+
+  /* USER CODE BEGIN RTOS_MUTEX */
+  /* add mutexes, ... */
+  /* USER CODE END RTOS_MUTEX */
+
+  /* USER CODE BEGIN RTOS_SEMAPHORES */
+  /* add semaphores, ... */
+  /* USER CODE END RTOS_SEMAPHORES */
+
+  /* USER CODE BEGIN RTOS_TIMERS */
+  /* start timers, add new ones, ... */
+  /* USER CODE END RTOS_TIMERS */
+
+  /* USER CODE BEGIN RTOS_QUEUES */
+  /* add queues, ... */
+  /* USER CODE END RTOS_QUEUES */
+
+  /* Create the thread(s) */
+  /* creation of defaultTask */
+  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+
+  /* creation of updateTimeTask */
+  // updateTimeTaskHandle = osThreadNew(updateTime, NULL, &updateTimeTask_attributes);
+
+  /* creation of updateMoveTask */
+  updateMoveTaskHandle = osThreadNew(updateMove, NULL, &updateMoveTask_attributes);
+
+  /* creation of animLightsTask */
+  animLightsTaskHandle = osThreadNew(animateLights, NULL, &animLightsTask_attributes);
+
+  /* creation of readHallTask */
+  // readHallTaskHandle = osThreadNew(readHall, NULL, &readHallTask_attributes);
+// 
+  /* USER CODE BEGIN RTOS_THREADS */
+  /* add threads, ... */
+  /* USER CODE END RTOS_THREADS */
+
+  /* USER CODE BEGIN RTOS_EVENTS */
+  /* add events, ... */
+  /* USER CODE END RTOS_EVENTS */
+
+  /* Start scheduler */
+  osKernelStart();
+  /* We should never get here as control is now taken by the scheduler */
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
+
   while (1)
   {
     /* USER CODE END WHILE */
@@ -290,7 +392,7 @@ int main(void)
   // HAL_Delay(200);
 
     //properly update display of each player's time
-    updateTime();
+    // updateTimeOld();
     // if (count % 2 == 0) {
     //   mousehid.mouse_x = 200;
     // } else {
@@ -302,29 +404,29 @@ int main(void)
     HAL_Delay (10);
 
 
-    //de-assert and re-assert load pin to load values into register's D flip flops
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
-    HAL_Delay(1);
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
+    // //de-assert and re-assert load pin to load values into register's D flip flops
+    // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
+    // HAL_Delay(1);
+    // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
 
-    //transmit MISO data from shift registers into boardstate buffer
-    HAL_SPI_Receive(&hspi1, (uint8_t *)boardstate, 8, 100000);
+    // //transmit MISO data from shift registers into boardstate buffer
+    // HAL_SPI_Receive(&hspi1, (uint8_t *)boardstate, 8, 100000);
 
-    //turn received boardstate into 2d array instead of 1d array of uint8_t's
-    while((SPI1->SR & 0b1)) {}
+    // //turn received boardstate into 2d array instead of 1d array of uint8_t's
+    // while((SPI1->SR & 0b1)) {}
     
-    //constatntly store state of board in game so can be used when button is pressed
-    for(int i = 0; i < 8; i++) {
-      game.currentBoardState[i][0] = (0b10000000 & ~boardstate[i]) >> 7; 
-      game.currentBoardState[i][1] = (0b01000000 & ~boardstate[i]) >> 6; 
-      game.currentBoardState[i][2] = (0b00100000 & ~boardstate[i]) >> 5; 
-      game.currentBoardState[i][3] = (0b00010000 & ~boardstate[i]) >> 4; 
-      game.currentBoardState[i][4] = (0b00001000 & ~boardstate[i]) >> 3; 
-      game.currentBoardState[i][5] = (0b00000100 & ~boardstate[i]) >> 2; 
-      game.currentBoardState[i][6] = (0b00000010 & ~boardstate[i]) >> 1; 
-      game.currentBoardState[i][7] = (0b00000001 & ~boardstate[i]) >> 0; 
+    // //constatntly store state of board in game so can be used when button is pressed
+    // for(int i = 0; i < 8; i++) {
+    //   game.currentBoardState[i][0] = (0b10000000 & ~boardstate[i]) >> 7; 
+    //   game.currentBoardState[i][1] = (0b01000000 & ~boardstate[i]) >> 6; 
+    //   game.currentBoardState[i][2] = (0b00100000 & ~boardstate[i]) >> 5; 
+    //   game.currentBoardState[i][3] = (0b00010000 & ~boardstate[i]) >> 4; 
+    //   game.currentBoardState[i][4] = (0b00001000 & ~boardstate[i]) >> 3; 
+    //   game.currentBoardState[i][5] = (0b00000100 & ~boardstate[i]) >> 2; 
+    //   game.currentBoardState[i][6] = (0b00000010 & ~boardstate[i]) >> 1; 
+    //   game.currentBoardState[i][7] = (0b00000001 & ~boardstate[i]) >> 0; 
 
-    }
+    // }
 
     // TODO: remove this later once hall effect sensors fixed!!!!!!!!!!!!!!!!!!!!!!!!!
     // TODO: FIGURE OUT WHY ALL THESE ARE FUCKED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -367,57 +469,57 @@ int main(void)
 
     //TODO: update to send better data later
 
-    if (game.gameStarted) {
-    //calculate if move occurred and capture data related to said move
-    updateMoveShit(&game);
-    } else {
-      // light up squares where pieces aren't but should be before start of game
-      checkStartingSquares();
-    }
+    // if (game.gameStarted) {
+    // //calculate if move occurred and capture data related to said move
+    // updateMoveShit(&game);
+    // } else {
+    //   // light up squares where pieces aren't but should be before start of game
+    //   checkStartingSquares();
+    // }
 
-    //if current move is finished, transmit said data to teh desktop app
-    if(game.currentMove->isFinalState && game.gameStarted) {
+    // //if current move is finished, transmit said data to teh desktop app
+    // if(game.currentMove->isFinalState && game.gameStarted) {
       
-      if (game.currentMove->secondPiecePickup) {
+    //   if (game.currentMove->secondPiecePickup) {
         
-        clockModeReport.reportId = 2;
-        USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 7);
-      } else {
-        clockModeReport.reportId = 1;
+    //     clockModeReport.reportId = 2;
+    //     USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 7);
+    //   } else {
+    //     clockModeReport.reportId = 1;
 
-        USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 5);
-      }
+    //     USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 5);
+    //   }
 
-    volatile int x = 1;
+    // volatile int x = 1;
     
-    // TODO: MAKE REPORT TO BE SENT BACK HERE WITH CHAR BOARD POSITION!!!!!!!!!!!!!!!!!!!!
+    // // TODO: MAKE REPORT TO BE SENT BACK HERE WITH CHAR BOARD POSITION!!!!!!!!!!!!!!!!!!!!
 
     
-      if (clockModeReport.reportId == 2) {
-        clockModeReport.report2.finalPickupRow = 8;
-        clockModeReport.report2.finalPickupCol = 8;
-      } else {
-        clockModeReport.report1.finalPickupRow = 8;
-        clockModeReport.report1.finalPickupCol = 8;
+    //   if (clockModeReport.reportId == 2) {
+    //     clockModeReport.report2.finalPickupRow = 8;
+    //     clockModeReport.report2.finalPickupCol = 8;
+    //   } else {
+    //     clockModeReport.report1.finalPickupRow = 8;
+    //     clockModeReport.report1.finalPickupCol = 8;
         
-      }
-      game.currentMove->firstPiecePickup = false;
-      game.currentMove->secondPiecePickup = false;
-      game.currentMove->isFinalState = false;
-      game.currentMove->lightsOn = false;
-      game.currentMove->pieceNewSquare = false;
-    }
+    //   }
+    //   game.currentMove->firstPiecePickup = false;
+    //   game.currentMove->secondPiecePickup = false;
+    //   game.currentMove->isFinalState = false;
+    //   game.currentMove->lightsOn = false;
+    //   game.currentMove->pieceNewSquare = false;
+    // }
     
 
-    volatile bool sendTest = false;
-    if (sendTest) {
-      HAL_Delay(1000);
-      sendTestGame();
+    // volatile bool sendTest = false;
+    // if (sendTest) {
+    //   HAL_Delay(1000);
+    //   sendTestGame();
 
-      HAL_Delay(1000);
-      lightsOff();
+    //   HAL_Delay(1000);
+    //   lightsOff();
 
-    }
+    // }
     
   }
   /* USER CODE END 3 */
@@ -677,13 +779,13 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(EXTI1_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(EXTI1_IRQn);
 
-  HAL_NVIC_SetPriority(EXTI2_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(EXTI2_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(EXTI2_IRQn);
 
-  HAL_NVIC_SetPriority(EXTI3_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(EXTI3_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(EXTI3_IRQn);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
@@ -707,6 +809,191 @@ void boardstateToLed() {
   }
 }
 /* USER CODE END 4 */
+
+/* USER CODE BEGIN Header_StartDefaultTask */
+/**
+  * @brief  Function implementing the defaultTask thread.
+  * @param  argument: Not used
+  * @retval None
+  */
+/* USER CODE END Header_StartDefaultTask */
+void StartDefaultTask(void *argument)
+{
+  /* init code for USB_DEVICE */
+  MX_USB_DEVICE_Init();
+  /* USER CODE BEGIN 5 */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(portMAX_DELAY);
+  }
+  /* USER CODE END 5 */
+}
+
+/* USER CODE BEGIN Header_updateTime */
+/**
+* @brief Function implementing the updateTimeTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_updateTime */
+void updateTime(void *argument)
+{
+  /* USER CODE BEGIN updateTime */
+  /* Infinite loop */
+  for(;;)
+  {
+    updateTimeOld();
+    osDelay(1);
+  }
+  /* USER CODE END updateTime */
+}
+
+/* USER CODE BEGIN Header_updateMove */
+/**
+* @brief Function implementing the updateMoveTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_updateMove */
+void updateMove(void *argument)
+{
+  /* USER CODE BEGIN updateMove */
+  /* Infinite loop */
+  for(;;)
+  {
+    //de-assert and re-assert load pin to load values into register's D flip flops
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
+    osDelay(1);
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
+
+    //transmit MISO data from shift registers into boardstate buffer
+    HAL_SPI_Receive(&hspi1, (uint8_t *)boardstate, 8, 100000);
+
+    //turn received boardstate into 2d array instead of 1d array of uint8_t's
+    while((SPI1->SR & 0b1)) {}
+    
+    //constatntly store state of board in game so can be used when button is pressed
+    for(int i = 0; i < 8; i++) {
+      game.currentBoardState[i][0] = (0b10000000 & ~boardstate[i]) >> 7; 
+      game.currentBoardState[i][1] = (0b01000000 & ~boardstate[i]) >> 6; 
+      game.currentBoardState[i][2] = (0b00100000 & ~boardstate[i]) >> 5; 
+      game.currentBoardState[i][3] = (0b00010000 & ~boardstate[i]) >> 4; 
+      game.currentBoardState[i][4] = (0b00001000 & ~boardstate[i]) >> 3; 
+      game.currentBoardState[i][5] = (0b00000100 & ~boardstate[i]) >> 2; 
+      game.currentBoardState[i][6] = (0b00000010 & ~boardstate[i]) >> 1; 
+      game.currentBoardState[i][7] = (0b00000001 & ~boardstate[i]) >> 0; 
+
+    }
+
+    updateTimeOld();
+
+    if (game.gameStarted) {
+      //calculate if move occurred and capture data related to said move
+      updateMoveShit(&game);
+    } else {
+      // light up squares where pieces aren't but should be before start of game
+      checkStartingSquares();
+    }
+
+    //if current move is finished, transmit said data to teh desktop app
+    if(game.currentMove->isFinalState && game.gameStarted) {
+      updateMoveShit(&game);
+      
+      if (game.currentMove->secondPiecePickup) {
+        
+        clockModeReport.reportId = 2;
+        USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 7);
+      } else {
+        clockModeReport.reportId = 1;
+
+        USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 5);
+      }
+
+    volatile int x = 1;
+
+    osDelay(1);
+    
+    // TODO: MAKE REPORT TO BE SENT BACK HERE WITH CHAR BOARD POSITION!!!!!!!!!!!!!!!!!!!!
+
+    
+      if (clockModeReport.reportId == 2) {
+        clockModeReport.report2.finalPickupRow = 8;
+        clockModeReport.report2.finalPickupCol = 8;
+      } else {
+        clockModeReport.report1.finalPickupRow = 8;
+        clockModeReport.report1.finalPickupCol = 8;
+        
+      }
+      game.currentMove->firstPiecePickup = false;
+      game.currentMove->secondPiecePickup = false;
+      game.currentMove->isFinalState = false;
+      game.currentMove->lightsOn = false;
+      game.currentMove->pieceNewSquare = false;
+    }
+    osDelay(1);
+  }
+  /* USER CODE END updateMove */
+}
+
+/* USER CODE BEGIN Header_animateLights */
+/**
+* @brief Function implementing the animLightsTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_animateLights */
+void animateLights(void *argument)
+{
+  /* USER CODE BEGIN animateLights */
+  /* Infinite loop */
+  for(;;)
+  {
+    osSemaphoreAcquire(animateLightsMutex, portMAX_DELAY);
+    animateInitialLights();
+    osDelay(1);
+  }
+  /* USER CODE END animateLights */
+}
+
+/* USER CODE BEGIN Header_readHall */
+/**
+* @brief Function implementing the readHallTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_readHall */
+void readHall(void *argument)
+{
+  /* USER CODE BEGIN readHall */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(portMAX_DELAY);
+  }
+  /* USER CODE END readHall */
+}
+
+/**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM1 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM1) {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.

@@ -335,10 +335,7 @@ void animateInitialLights() {
         // update lights
         updateLights();
 
-        int count = 0;
-        for(int i = 0; i < 500000; i++) {
-            count++;
-        }
+        osDelay(100);
 
         // HAL_Delay(20);
     }

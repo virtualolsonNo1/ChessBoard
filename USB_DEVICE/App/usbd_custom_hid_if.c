@@ -26,7 +26,10 @@
 #include "usbd_customhid.h"
 #include "game.h"
 #include "usb.h"
+#include "cmsis_os2.h"
+
 extern HIDClockModeReports clockModeReport;
+extern osSemaphoreId_t animateLightsMutex;
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -285,7 +288,7 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
     game.currentMove->receivedLightData = true;
     // updateReceivedLights();
     if (game.previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] != 'n' && game.previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] != 'N') {
-      animateInitialLights();
+      osSemaphoreRelease(animateLightsMutex);
     } else {
       updateReceivedLights();
     }
