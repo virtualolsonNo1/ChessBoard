@@ -145,6 +145,11 @@ void resetGame(struct GameState* game) {
     clockModeReport.report3.reset = 255;
     USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint32_t*)&clockModeReport, 2);
     lightsOff();
+    game->currentMove->firstPiecePickup = false;
+    game->currentMove->secondPiecePickup = false;
+    game->currentMove->isFinalState = false;
+    game->currentMove->lightsOn = false;
+    game->currentMove->pieceNewSquare = false;
     
     return;
 }
@@ -202,12 +207,15 @@ void updateMoveShit(struct GameState* game) {
                 lightsOff();
 
                 // update previous state to that of current board
+                game->currentMove->lightsOn = false;
                 memcpy(game->previousState, game->currentBoardState, 8 * 8 * sizeof(game->previousState[0][0]));
                 memset(game->currentMove->allPieceLights, 0, 64);
                 memset(game->currentMove->lightState, 0, 64);
                 
                 // update isWhiteMove to correctly reflect who's turn it is
                 return;
+                } else {
+                    // TODO ERROR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!??????????????????????????????????????????????????????????????????///////
                 }
             
             // check to see if after first piece is picked up, it's put back down to instead pick up another piece for their move
@@ -216,12 +224,18 @@ void updateMoveShit(struct GameState* game) {
                 game->currentMove->firstPiecePickup = false;
                 lightsOff();
                 return;
+                // if piece is moved over one of it's potential moves, only light up that square and it's original spot
                 } else if (game->currentBoardState[i][j] == 1 && game->currentMove->allPieceLights[i][j] == 1 && game->previousState[i][j] == 0) {
+                    game->currentMove->pieceNewSquare = true;
+                    game->currentMove->pieceNewRow = i;
+                    game->currentMove->pieceNewCol = j;
                     memset(game->currentMove->lightState, 0, 64);
                     game->currentMove->lightState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] = 1;
                     game->currentMove->lightState[i][j] = 1;
                     updateLights();
-                } 
+                } else if (game->currentMove->pieceNewSquare && game->currentBoardState[game->currentMove->pieceNewRow][game->currentMove->pieceNewCol]) {
+                    // TODO: timer debouncing shit!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                }
             } 
 
             // TODO: MAKE IT SO WHEN PIECE SLID OR MOVED ONTO A SQUARE THAT IT'S ALLOWED TO, ONLY THAT AND STARTING SQUARE STAY LIT
@@ -273,6 +287,61 @@ void updateLights() {
     while(!(GPIOA->ODR & GPIO_PIN_10)) {}
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
     while((GPIOA->ODR & GPIO_PIN_10)) {}
+}
+
+
+void animateInitialLights() {
+    memset(game.currentMove->lightState, 0, 64);
+
+    int rowMax = clockModeReport.firstPickupRow < 4 ? 7 - clockModeReport.firstPickupRow : clockModeReport.firstPickupRow;
+    int colMax = clockModeReport.firstPickupCol < 4 ? 7 - clockModeReport.firstPickupCol : clockModeReport.firstPickupCol;
+    int maxVal = (rowMax >= colMax) ? rowMax : colMax;
+    for(int i = 1; i < 8; i++) {
+        uint8_t eightBitLights[8] = {0};
+        // check below to see if light should go on
+        if (clockModeReport.firstPickupRow + i <= 7 && game.currentMove->allPieceLights[clockModeReport.firstPickupRow + i][clockModeReport.firstPickupCol] == 1) {
+            game.currentMove->lightState[clockModeReport.firstPickupRow + i][clockModeReport.firstPickupCol] = 1;
+        }
+        // check below and to the right if light should go on
+        if (clockModeReport.firstPickupRow + i <= 7 && clockModeReport.firstPickupCol + i <= 7 && game.currentMove->allPieceLights[clockModeReport.firstPickupRow + i][clockModeReport.firstPickupCol + i] == 1) {
+            game.currentMove->lightState[clockModeReport.firstPickupRow + i][clockModeReport.firstPickupCol + i] = 1;
+        }
+        // check below and to the left if light should go on
+        if (clockModeReport.firstPickupRow + i <= 7 && clockModeReport.firstPickupCol - i >= 0 && game.currentMove->allPieceLights[clockModeReport.firstPickupRow + i][clockModeReport.firstPickupCol - i] == 1) {
+            game.currentMove->lightState[clockModeReport.firstPickupRow + i][clockModeReport.firstPickupCol - i] = 1;
+        }
+
+        // check above to see if lights should go on
+        if (clockModeReport.firstPickupRow - i >= 0 && game.currentMove->allPieceLights[clockModeReport.firstPickupRow - i][clockModeReport.firstPickupCol] == 1) {
+            game.currentMove->lightState[clockModeReport.firstPickupRow - i][clockModeReport.firstPickupCol] = 1;
+        }
+        // check above and to the right if light should go on
+        if (clockModeReport.firstPickupRow - i >= 0 && clockModeReport.firstPickupCol + i <= 7 && game.currentMove->allPieceLights[clockModeReport.firstPickupRow - i][clockModeReport.firstPickupCol + i] == 1) {
+            game.currentMove->lightState[clockModeReport.firstPickupRow - i][clockModeReport.firstPickupCol + i] = 1;
+        }
+        // check above and to the left if light should go on
+        if (clockModeReport.firstPickupRow - i >= 0 && clockModeReport.firstPickupCol - i >= 0 && game.currentMove->allPieceLights[clockModeReport.firstPickupRow - i][clockModeReport.firstPickupCol - i] == 1) {
+            game.currentMove->lightState[clockModeReport.firstPickupRow - i][clockModeReport.firstPickupCol - i] = 1;
+        }
+
+        // check to the right to see if lights should go on
+        if (clockModeReport.firstPickupCol + i <= 7 && game.currentMove->allPieceLights[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol + i] == 1) {
+            game.currentMove->lightState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol + i] = 1;
+        }
+        // check to the left to see if lights should go on
+        if (clockModeReport.firstPickupCol - i >= 0 && game.currentMove->allPieceLights[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol - i] == 1) {
+            game.currentMove->lightState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol - i] = 1;
+        }
+        // update lights
+        updateLights();
+
+        int count = 0;
+        for(int i = 0; i < 500000; i++) {
+            count++;
+        }
+
+        // HAL_Delay(20);
+    }
 }
 
 

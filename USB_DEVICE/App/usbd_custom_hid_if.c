@@ -25,6 +25,8 @@
 #include "string.h"
 #include "usbd_customhid.h"
 #include "game.h"
+#include "usb.h"
+extern HIDClockModeReports clockModeReport;
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -281,7 +283,12 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
     memcpy(game.currentMove->allPieceLights, game.currentMove->lightState, 64);
     volatile int x = 1;
     game.currentMove->receivedLightData = true;
-    updateReceivedLights();
+    // updateReceivedLights();
+    if (game.previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] != 'n' && game.previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] != 'N') {
+      animateInitialLights();
+    } else {
+      updateReceivedLights();
+    }
   }
   
 

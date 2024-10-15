@@ -404,6 +404,8 @@ int main(void)
       game.currentMove->firstPiecePickup = false;
       game.currentMove->secondPiecePickup = false;
       game.currentMove->isFinalState = false;
+      game.currentMove->lightsOn = false;
+      game.currentMove->pieceNewSquare = false;
     }
     
 

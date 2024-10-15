@@ -21,8 +21,8 @@
 
 # REMAINING TODOs
 # THINGS TO TEST AT OFFICE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-- playing normal game over HID
-- lights when piece picked up, put down, another piece picked up, other team piece picked up, etc. 
+- Add in FreeRTOS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+- lights when other team piece picked up, etc. 
 - start lights under missing pieces
 - state of board resets properly when reset game hit
 
@@ -31,7 +31,7 @@
 - Add in extra functionality
     - FIX RESET BUG???????????????????????????!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         - i.e. if error on desktop app, weird firmware bug when reset??? Or whatever causes weird firmware bug that makes it so you have to restart chessbaord for it to work
-    - no clock mode
+    - no clock mode and debouncing shit
     - increment???????????
     - no light mode???????????????????
     - opening practice mode, where in app you can choose opening and it'll give you a random position from which you can place pieces on correct lit up spots and play what you think best move is
