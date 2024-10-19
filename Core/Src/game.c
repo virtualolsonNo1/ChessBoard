@@ -171,15 +171,18 @@ void updateMoveShit(struct GameState* game) {
                     
                 }
                 return;
-                //TODO: test if this code is fixed for picking up a piece, moving it over a square, then moving it to a different square
             } else if(game->currentMove->firstPiecePickup && !game->currentMove->secondPiecePickup && !game->currentMove->isFinalState && !(i == clockModeReport.firstPickupRow && j == clockModeReport.firstPickupCol) && game->previousState[i][j] == 1 && game->currentBoardState[i][j] == 0) {
+                // if (game->currentMove->lightsOn ) {
+                //     if(game->currentMove->allPieceLights[i][j] == 1) {
                 // update square info for picked up piece
                 clockModeReport.report2.secondPickupRow = i;
                 clockModeReport.report2.secondPickupCol = j;
                 clockModeReport.report2.finalPickupCol = 8;
                 clockModeReport.report2.finalPickupRow = 8;
                 game->currentMove->secondPiecePickup = true;
-                return;
+                /* } else {
+                    // TODO: if piece picked up isn't valid second piece, blink lights or some shit. CHECK FOR EN PESSANT OR 
+                } */
             } else if(game->currentMove->isFinalState) {
                     bool enteredOne = false;
                 // if it was a take, check to make sure piece was moved there

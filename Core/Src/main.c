@@ -59,10 +59,10 @@ SPI_HandleTypeDef hspi2;
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim5;
 
-/* Definitions for defaultTask */
-osThreadId_t defaultTaskHandle;
-const osThreadAttr_t defaultTask_attributes = {
-  .name = "defaultTask",
+/* Definitions for blinkErrorTask */
+osThreadId_t blinkErrorTaskHandle;
+const osThreadAttr_t blinkErrorTask_attributes = {
+  .name = "blinkErrorTask",
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
@@ -87,13 +87,6 @@ const osThreadAttr_t animLightsTask_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
-/* Definitions for readHallTask */
-osThreadId_t readHallTaskHandle;
-const osThreadAttr_t readHallTask_attributes = {
-  .name = "readHallTask",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityLow,
-};
 /* Definitions for animateMutex */
 osMutexId_t animateMutexHandle;
 const osMutexAttr_t animateMutex_attributes = {
@@ -113,11 +106,10 @@ static void MX_SPI1_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM5_Init(void);
-void StartDefaultTask(void *argument);
+void blinkError(void *argument);
 void updateTime(void *argument);
 void updateMove(void *argument);
 void animateLights(void *argument);
-void readHall(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -317,8 +309,8 @@ int main(void)
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-  /* creation of defaultTask */
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+  /* creation of blinkErrorTask */
+  blinkErrorTaskHandle = osThreadNew(blinkError, NULL, &blinkErrorTask_attributes);
 
   /* creation of updateTimeTask */
   // updateTimeTaskHandle = osThreadNew(updateTime, NULL, &updateTimeTask_attributes);
@@ -329,9 +321,6 @@ int main(void)
   /* creation of animLightsTask */
   animLightsTaskHandle = osThreadNew(animateLights, NULL, &animLightsTask_attributes);
 
-  /* creation of readHallTask */
-  // readHallTaskHandle = osThreadNew(readHall, NULL, &readHallTask_attributes);
-// 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
@@ -810,14 +799,14 @@ void boardstateToLed() {
 }
 /* USER CODE END 4 */
 
-/* USER CODE BEGIN Header_StartDefaultTask */
+/* USER CODE BEGIN Header_blinkError */
 /**
-  * @brief  Function implementing the defaultTask thread.
+  * @brief  Function implementing the blinkErrorTask thread.
   * @param  argument: Not used
   * @retval None
   */
-/* USER CODE END Header_StartDefaultTask */
-void StartDefaultTask(void *argument)
+/* USER CODE END Header_blinkError */
+void blinkError(void *argument)
 {
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
@@ -954,24 +943,6 @@ void animateLights(void *argument)
     osDelay(1);
   }
   /* USER CODE END animateLights */
-}
-
-/* USER CODE BEGIN Header_readHall */
-/**
-* @brief Function implementing the readHallTask thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_readHall */
-void readHall(void *argument)
-{
-  /* USER CODE BEGIN readHall */
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(portMAX_DELAY);
-  }
-  /* USER CODE END readHall */
 }
 
 /**
