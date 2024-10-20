@@ -145,10 +145,8 @@ void resetGame(struct GameState* game) {
     clockModeReport.report3.reset = 255;
     USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint32_t*)&clockModeReport, 2);
     lightsOff();
-    game->currentMove->firstPiecePickup = false;
-    game->currentMove->secondPiecePickup = false;
+    game->currentMove->pickupState = NO_PIECE_PICKUP;
     game->currentMove->isFinalState = false;
-    game->currentMove->lightsOn = false;
     game->currentMove->pieceNewSquare = false;
     
     return;
@@ -157,38 +155,86 @@ void resetGame(struct GameState* game) {
 void updateMoveShit(struct GameState* game) {
     for(int i = 0; i < 8; i++) {
         for(int j = 0; j < 8; j++) {
-            if(!game->currentMove->firstPiecePickup && game->previousState[i][j] == 1 && game->currentBoardState[i][j] == 0) {
-                // update square info for picked up piece
-                clockModeReport.firstPickupRow = i;
-                clockModeReport.firstPickupCol = j;
-                game->currentMove->firstPiecePickup = true;
-                
-                if ((game->isWhiteMove && isupper(game->previousStateChar[i][j])) || (!game->isWhiteMove && islower(game->previousStateChar[i][j]))) {
-                    lightReport.reportId = 3;
-                    lightReport.report3.reset = i << 3 | j;
-                    USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint32_t*)&lightReport, 2);
-                    USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS);
+            if(game->currentMove->pickupState == NO_PIECE_PICKUP) {
+                if (game->previousState[i][j] == 1 && game->currentBoardState[i][j] == 0) {
+                    // update square info for picked up piece
+                    clockModeReport.firstPickupRow = i;
+                    clockModeReport.firstPickupCol = j;
+                    game->currentMove->pickupState = FIRST_PIECE_PICKUP;
                     
+                    if ((game->isWhiteMove && isupper(game->previousStateChar[i][j])) || (!game->isWhiteMove && islower(game->previousStateChar[i][j]))) {
+                        game->currentMove->firstPiecePlayersColor = true;
+                        lightReport.reportId = 3;
+                        lightReport.report3.reset = i << 3 | j;
+                        USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint32_t*)&lightReport, 2);
+                        USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS);
+                        
+                    } else {
+                        game->currentMove->firstPiecePlayersColor = false;
+                        lightReport.reportId = 3;
+                        lightReport.report3.reset = i << 3 | j;
+                        USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint32_t*)&lightReport, 2);
+                        USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS);
+                        // TODO: DO WE WANT A DELAY??? Also, make sure lightsOn works properly by adding println debugging with segger_rtt
+                        // HAL_Delay(100);
+                    }
+                    return;
                 }
-                return;
-            } else if(game->currentMove->firstPiecePickup && !game->currentMove->secondPiecePickup && !game->currentMove->isFinalState && !(i == clockModeReport.firstPickupRow && j == clockModeReport.firstPickupCol) && game->previousState[i][j] == 1 && game->currentBoardState[i][j] == 0) {
-                // if (game->currentMove->lightsOn ) {
-                //     if(game->currentMove->allPieceLights[i][j] == 1) {
-                // update square info for picked up piece
-                clockModeReport.report2.secondPickupRow = i;
-                clockModeReport.report2.secondPickupCol = j;
-                clockModeReport.report2.finalPickupCol = 8;
-                clockModeReport.report2.finalPickupRow = 8;
-                game->currentMove->secondPiecePickup = true;
-                /* } else {
-                    // TODO: if piece picked up isn't valid second piece, blink lights or some shit. CHECK FOR EN PESSANT OR 
-                } */
+            } else if(!game->currentMove->isFinalState && game->currentMove->pickupState == FIRST_PIECE_PICKUP) { 
+
+                // if a second piece is picked up, change state accordingly and update which piece was picked up
+                if (!(i == clockModeReport.firstPickupRow && j == clockModeReport.firstPickupCol) && game->previousState[i][j] == 1 && game->currentBoardState[i][j] == 0) {
+                // TODO: ADD LIGHTS OFF AND THEN TURN ON LIGHT OF FIRST SQUARE AND PIECE PICKED UP SQUARE
+                    // if (game->currentMove->lightsOn ) {
+                    //     if(game->currentMove->allPieceLights[i][j] == 1) {
+                    // update square info for picked up piece
+                    clockModeReport.report2.secondPickupRow = i;
+                    clockModeReport.report2.secondPickupCol = j;
+                    clockModeReport.report2.finalPickupCol = 8;
+                    clockModeReport.report2.finalPickupRow = 8;
+                    game->currentMove->pickupState = SECOND_PIECE_PICKUP;
+                    /* } else {
+                        // TODO: if piece picked up isn't valid second piece, blink lights or some shit. CHECK FOR EN PESSANT OR 
+                    } */
+
+                // if first piece picked up is put back on starting square, turn off lights and reset pickup state accordingly
+                } else if (game->currentBoardState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 1) {
+                    game->currentMove->pickupState = NO_PIECE_PICKUP;
+                    lightsOff();
+                    return;
+
+                // if piece is moved over one of it's potential moves, only light up that square and it's original spot
+                } else if (game->currentMove->lightsOn && game->currentMove->firstPiecePlayersColor && game->currentBoardState[i][j] == 1 && game->currentMove->allPieceLights[i][j] == 1 && game->previousState[i][j] == 0) {
+                    game->currentMove->pieceNewSquare = true;
+                    game->currentMove->pieceNewRow = i;
+                    game->currentMove->pieceNewCol = j;
+                    memset(game->currentMove->lightState, 0, 64);
+                    game->currentMove->lightState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] = 1;
+                    game->currentMove->lightState[i][j] = 1;
+                    game->currentMove->lightsOn = true;
+                    updateLights();
+
+                // first piece picked up was opponent's to take, and second piece is a valid one that is the player's piece
+                // TODO: TEST THIS AND ABOVE IF STATEMENT AND MAKE SURE THAT THE LIGHTSON STATE IS ALWAYS CURRENT WITH PRINT STATEMENTS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                } else if (game->currentMove->lightsOn && !game->currentMove->firstPiecePlayersColor && game->currentBoardState[i][j] == 0 && game->currentMove->allPieceLights[i][j] == 1 && game->previousState[i][j] == 1) {
+                    memset(game->currentMove->lightState, 0, 64);
+                    game->currentMove->lightState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] = 1;
+                    game->currentMove->lightState[i][j] = 1;
+                    game->currentMove->lightsOn = true;
+                    updateLights();
+                } else if (game->currentMove->pieceNewSquare && game->currentBoardState[game->currentMove->pieceNewRow][game->currentMove->pieceNewCol]) {
+                    // TODO: timer debouncing shit for another animation if piece slides and then picked up again if we want????????????????????????????!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                }
+
+            // if move is over by button press or timer
             } else if(game->currentMove->isFinalState) {
-                    bool enteredOne = false;
+                bool enteredOne = false;
                 // if it was a take, check to make sure piece was moved there
-                if (game->currentMove->secondPiecePickup) {
+                if (game->currentMove->pickupState == SECOND_PIECE_PICKUP) {
                     game->currentMove->pieceNewSquare = false;
-                    // TODO: FIX THIS SO THAT YOU CAN PICK UP OPPONENT PIECE FIRST!!!!!!!!!!!!!!!!!!!!!
+
+                    // TODO: ADD CHECK TO MAKE SURE BOTH SPOTS AREN'T 1, OR NOT NECESSARY???????????????????????????????????????????
+                    // if spot where first or second piece was picked up is a 1, then that's the final spot the piece was moved and it's probably valid as long as error handling is added
                     if (game->currentBoardState[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 1 || game->currentBoardState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 1) {
                         enteredOne = true;
                         
@@ -198,6 +244,8 @@ void updateMoveShit(struct GameState* game) {
                         enteredOne = true;
                                                
                     }
+                
+                // as opposed to a take, if piece is moved, update report accordingly once final square is found
                 } else {
                     if (game->previousState[i][j] == 0 && game->currentBoardState[i][j] == 1) {
                             clockModeReport.report1.finalPickupRow = i;
@@ -206,43 +254,21 @@ void updateMoveShit(struct GameState* game) {
                     }
                 }                     
                 if (enteredOne) {
-                // turn off lights for potential moves for piece
-                lightsOff();
+                    // turn off lights for potential moves for piece
+                    lightsOff();
 
-                // update previous state to that of current board
-                game->currentMove->lightsOn = false;
-                memcpy(game->previousState, game->currentBoardState, 8 * 8 * sizeof(game->previousState[0][0]));
-                memset(game->currentMove->allPieceLights, 0, 64);
-                memset(game->currentMove->lightState, 0, 64);
-                
-                // update isWhiteMove to correctly reflect who's turn it is
-                return;
+                    // update previous state to that of current board
+                    memcpy(game->previousState, game->currentBoardState, 8 * 8 * sizeof(game->previousState[0][0]));
+                    memset(game->currentMove->allPieceLights, 0, 64);
+                    memset(game->currentMove->lightState, 0, 64);
+                    
+                    return;
                 } else {
-                    // TODO ERROR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!??????????????????????????????????????????????????????????????????///////
+                    // TODO: CHANGE THIS TO CHECK FOR IF IT DOESN"T ENTER SECOND PIECE PICKUP OR FIRST PIECE FINAL SPOT NOT FOUND, as now it'll just enter here whenever we're not on the final square
                 }
             
-            // check to see if after first piece is picked up, it's put back down to instead pick up another piece for their move
-            } else if (game->currentMove->firstPiecePickup && !game->currentMove->secondPiecePickup) {
-                if (game->currentBoardState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 1) {
-                game->currentMove->firstPiecePickup = false;
-                lightsOff();
-                return;
-                // if piece is moved over one of it's potential moves, only light up that square and it's original spot
-                } else if (game->currentBoardState[i][j] == 1 && game->currentMove->allPieceLights[i][j] == 1 && game->previousState[i][j] == 0) {
-                    game->currentMove->pieceNewSquare = true;
-                    game->currentMove->pieceNewRow = i;
-                    game->currentMove->pieceNewCol = j;
-                    memset(game->currentMove->lightState, 0, 64);
-                    game->currentMove->lightState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] = 1;
-                    game->currentMove->lightState[i][j] = 1;
-                    updateLights();
-                } else if (game->currentMove->pieceNewSquare && game->currentBoardState[game->currentMove->pieceNewRow][game->currentMove->pieceNewCol]) {
-                    // TODO: timer debouncing shit!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                }
+            } else if (game->currentMove->pickupState == FIRST_PIECE_PICKUP) {
             } 
-
-            // TODO: MAKE IT SO WHEN PIECE SLID OR MOVED ONTO A SQUARE THAT IT'S ALLOWED TO, ONLY THAT AND STARTING SQUARE STAY LIT
-
 
         } 
     }
@@ -264,8 +290,9 @@ void convert2DArrayToBitarray(const uint8_t input[8][8], uint8_t output[8]) {
 
 void updateReceivedLights() {
    if (game.currentMove->receivedLightData && !(game.currentMove->lightsOn)) {
+        game.currentMove->lightsOn = true;
         uint8_t lights[8];
-        convert2DArrayToBitarray(game.currentMove->lightState, lights);       
+        convert2DArrayToBitarray(game.currentMove->allPieceLights, lights);       
 
       volatile int test = HAL_SPI_Transmit(&hspi1, (uint8_t *)lights, 8, 10000);
       while(!(SPI1->SR & 0b10)) {}
@@ -295,6 +322,7 @@ void updateLights() {
 
 void animateInitialLights() {
     memset(game.currentMove->lightState, 0, 64);
+    game.currentMove->lightsOn = true;
 
     int rowMax = clockModeReport.firstPickupRow < 4 ? 7 - clockModeReport.firstPickupRow : clockModeReport.firstPickupRow;
     int colMax = clockModeReport.firstPickupCol < 4 ? 7 - clockModeReport.firstPickupCol : clockModeReport.firstPickupCol;
@@ -347,6 +375,7 @@ void animateInitialLights() {
 
 void lightsOff() {
     uint8_t lightsOff[8][8] = {0};
+    game.currentMove->lightsOn = false;
     memcpy(game.currentMove->lightState, lightsOffArr, 64);
     updateLights();
 }

@@ -310,7 +310,7 @@ int main(void)
 
   /* Create the thread(s) */
   /* creation of blinkErrorTask */
-  blinkErrorTaskHandle = osThreadNew(blinkError, NULL, &blinkErrorTask_attributes);
+  // blinkErrorTaskHandle = osThreadNew(blinkError, NULL, &blinkErrorTask_attributes);
 
   /* creation of updateTimeTask */
   // updateTimeTaskHandle = osThreadNew(updateTime, NULL, &updateTimeTask_attributes);
@@ -889,7 +889,7 @@ void updateMove(void *argument)
     if(game.currentMove->isFinalState && game.gameStarted) {
       updateMoveShit(&game);
       
-      if (game.currentMove->secondPiecePickup) {
+      if (game.currentMove->pickupState == SECOND_PIECE_PICKUP) {
         
         clockModeReport.reportId = 2;
         USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 7);
@@ -914,8 +914,7 @@ void updateMove(void *argument)
         clockModeReport.report1.finalPickupCol = 8;
         
       }
-      game.currentMove->firstPiecePickup = false;
-      game.currentMove->secondPiecePickup = false;
+      game.currentMove->pickupState = NO_PIECE_PICKUP;
       game.currentMove->isFinalState = false;
       game.currentMove->lightsOn = false;
       game.currentMove->pieceNewSquare = false;

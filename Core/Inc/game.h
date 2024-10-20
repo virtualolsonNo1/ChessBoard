@@ -36,21 +36,26 @@ struct Player {
     bool isWhite;
 };
 
+enum PickupState {
+    NO_PIECE_PICKUP,
+    FIRST_PIECE_PICKUP,
+    SECOND_PIECE_PICKUP,
+    FINAL_STATE
+};
+
 struct MoveState {
-    bool firstPiecePickup;
     bool lightsOn;
     bool receivedLightData;
-    bool secondPiecePickup;
+    enum PickupState pickupState;
+    bool firstPiecePlayersColor;
     bool isFinalState;
     uint8_t allPieceLights[8][8];
     uint8_t lightState[8][8];
     bool pieceNewSquare;
     uint8_t pieceNewRow;
     uint8_t pieceNewCol;
-    // uint8_t firstPickupState[8][8];
-    // uint8_t secondPickupState[8][8];
-    // uint8_t finalState[8][8];
 };
+
 
 struct GameState {
     struct Player* activePlayer;
