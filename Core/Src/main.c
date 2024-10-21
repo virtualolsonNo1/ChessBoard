@@ -222,7 +222,7 @@ int main(void)
   };
   animateLightsMutex = osSemaphoreNew(1, 0, animateLightsMutex);
 
-  //TODO: init SPI and what not
+  //TODO: init SPI and make sure CLOCK TURNS ON!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1 
   for(int i = 0; i < 8; i++) {
     ledstate[i] = 0xA2;
   }
@@ -417,11 +417,6 @@ int main(void)
 
     // }
 
-    // TODO: remove this later once hall effect sensors fixed!!!!!!!!!!!!!!!!!!!!!!!!!
-    // TODO: FIGURE OUT WHY ALL THESE ARE FUCKED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    // game.currentBoardState[6][1] = 1;
-    // game.currentBoardState[7][1] = 1;
-    // game.currentBoardState[3][2] = 0;
 
     volatile int x = 8;
 
@@ -893,15 +888,18 @@ void updateMove(void *argument)
         
         clockModeReport.reportId = 2;
         USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 7);
+        // TODO: MAKE SURE THAT THE char state of board always looks right when playing
+        USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS);
       } else {
         clockModeReport.reportId = 1;
 
         USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 5);
+        USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS);
       }
 
     volatile int x = 1;
 
-    osDelay(1);
+    // osDelay(10);
     
     // TODO: MAKE REPORT TO BE SENT BACK HERE WITH CHAR BOARD POSITION!!!!!!!!!!!!!!!!!!!!
 
@@ -918,8 +916,12 @@ void updateMove(void *argument)
       game.currentMove->isFinalState = false;
       game.currentMove->lightsOn = false;
       game.currentMove->pieceNewSquare = false;
+      game.currentMove->receivedLightData = false;
+
+    // osDelay(100);
+
     }
-    osDelay(1);
+    // osDelay(10);
   }
   /* USER CODE END updateMove */
 }

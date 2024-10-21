@@ -21,28 +21,21 @@
 
 # REMAINING TODOs
 # THINGS TO TEST AT OFFICE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-- Add in FreeRTOS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 - lights when other team piece picked up, etc. 
-- start lights under missing pieces
-- state of board resets properly when reset game hit
 
 # OTHER SHIT!
-- if pick up take piece that isn't allowed, blink error???????????????????????????????????????
+- if pick up take piece that isn't allowed, blink error??????????????????????????????????????? SAME WITH PUT DOWN?????!!!!!!
 - Add in extra functionality
     - FIX RESET BUG???????????????????????????!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         - i.e. if error on desktop app, weird firmware bug when reset??? Or whatever causes weird firmware bug that makes it so you have to restart chessbaord for it to work
     - no clock mode and debouncing shit
-    - increment???????????
+    - increment clock mode???????????
     - no light mode???????????????????
-    - opening practice mode, where in app you can choose opening and it'll give you a random position from which you can place pieces on correct lit up spots and play what you think best move is
     - fix having to auto queen
     - can play white as either side dynamically depending on which side of clock hit first
-    - pick up piece it animates  moves outward
     - second piece light functionality and put back down
-    - timer no clock mode
-- make webapp or at least make it look prettier with django or something
-    - live display before game of what pieces are there
-    - real time mode on desktop app?
+- make it display chess.com analysis afterwards
+- can play live games on lichess??????????!!!!!!!!!!!!!!!!!!!!!!!!!
 - redo PCB and Design fancy shit???
     - add crystal, maybe fix LED shift registers to match hall effect ones, actual decoupling caps, better mounting holes
 

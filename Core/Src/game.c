@@ -176,7 +176,6 @@ void updateMoveShit(struct GameState* game) {
                         USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint32_t*)&lightReport, 2);
                         USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS);
                         // TODO: DO WE WANT A DELAY??? Also, make sure lightsOn works properly by adding println debugging with segger_rtt
-                        // HAL_Delay(100);
                     }
                     return;
                 }
@@ -193,6 +192,14 @@ void updateMoveShit(struct GameState* game) {
                     clockModeReport.report2.finalPickupCol = 8;
                     clockModeReport.report2.finalPickupRow = 8;
                     game->currentMove->pickupState = SECOND_PIECE_PICKUP;
+                    // if (game->currentMove->lightsOn && !game->currentMove->firstPiecePlayersColor && game->currentBoardState[i][j] == 0 && game->currentMove->allPieceLights[i][j] == 1 && game->previousState[i][j] == 1) {
+                    if (game->currentMove->lightsOn && game->currentBoardState[i][j] == 0 && game->currentMove->allPieceLights[i][j] == 1 && game->previousState[i][j] == 1) {
+                        memset(game->currentMove->lightState, 0, 64);
+                        game->currentMove->lightState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] = 1;
+                        game->currentMove->lightState[i][j] = 1;
+                        game->currentMove->lightsOn = true;
+                        updateLights();
+                    } 
                     /* } else {
                         // TODO: if piece picked up isn't valid second piece, blink lights or some shit. CHECK FOR EN PESSANT OR 
                     } */
@@ -216,17 +223,15 @@ void updateMoveShit(struct GameState* game) {
 
                 // first piece picked up was opponent's to take, and second piece is a valid one that is the player's piece
                 // TODO: TEST THIS AND ABOVE IF STATEMENT AND MAKE SURE THAT THE LIGHTSON STATE IS ALWAYS CURRENT WITH PRINT STATEMENTS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                } else if (game->currentMove->lightsOn && !game->currentMove->firstPiecePlayersColor && game->currentBoardState[i][j] == 0 && game->currentMove->allPieceLights[i][j] == 1 && game->previousState[i][j] == 1) {
-                    memset(game->currentMove->lightState, 0, 64);
-                    game->currentMove->lightState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] = 1;
-                    game->currentMove->lightState[i][j] = 1;
-                    game->currentMove->lightsOn = true;
-                    updateLights();
                 } else if (game->currentMove->pieceNewSquare && game->currentBoardState[game->currentMove->pieceNewRow][game->currentMove->pieceNewCol]) {
                     // TODO: timer debouncing shit for another animation if piece slides and then picked up again if we want????????????????????????????!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 }
 
             // if move is over by button press or timer
+            } else if (!game->currentMove->isFinalState && game->currentMove->pickupState == SECOND_PIECE_PICKUP) {
+                //TODO: MAKE IT SO EN PESSANT AND CASTLING WORK!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                //TODO: CHECK THAT WHERE PIECE IS SET DOWN IS VALID?????????????????????????????????????????!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! EXTRA CHECK NEEDED IF FIRST PICKUP WAS OPPONENT'S PIECE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                
             } else if(game->currentMove->isFinalState) {
                 bool enteredOne = false;
                 // if it was a take, check to make sure piece was moved there
@@ -267,10 +272,8 @@ void updateMoveShit(struct GameState* game) {
                     // TODO: CHANGE THIS TO CHECK FOR IF IT DOESN"T ENTER SECOND PIECE PICKUP OR FIRST PIECE FINAL SPOT NOT FOUND, as now it'll just enter here whenever we're not on the final square
                 }
             
-            } else if (game->currentMove->pickupState == FIRST_PIECE_PICKUP) {
             } 
-
-        } 
+        }
     }
     
 }
@@ -321,6 +324,7 @@ void updateLights() {
 
 
 void animateInitialLights() {
+    // TODO: FIX LIGHT BUG WHERE IF PIECE IMMEDIATELY SLID SUPER QUICK< WEIRD LIGHTS BEHAVIOR
     memset(game.currentMove->lightState, 0, 64);
     game.currentMove->lightsOn = true;
 
