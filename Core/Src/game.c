@@ -193,16 +193,17 @@ void updateMoveShit(struct GameState* game) {
                     clockModeReport.report2.finalPickupRow = 8;
                     game->currentMove->pickupState = SECOND_PIECE_PICKUP;
                     // if (game->currentMove->lightsOn && !game->currentMove->firstPiecePlayersColor && game->currentBoardState[i][j] == 0 && game->currentMove->allPieceLights[i][j] == 1 && game->previousState[i][j] == 1) {
+                    // TODO: CASTLING AND EN PASSANT DON"T MEET THESE REQUIREMENTS SO NEED EXTRA CASE!!!!!!!!!!!!
                     if (game->currentMove->lightsOn && game->currentBoardState[i][j] == 0 && game->currentMove->allPieceLights[i][j] == 1 && game->previousState[i][j] == 1) {
                         memset(game->currentMove->lightState, 0, 64);
                         game->currentMove->lightState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] = 1;
                         game->currentMove->lightState[i][j] = 1;
                         game->currentMove->lightsOn = true;
                         updateLights();
-                    } 
-                    /* } else {
-                        // TODO: if piece picked up isn't valid second piece, blink lights or some shit. CHECK FOR EN PESSANT OR 
-                    } */
+                    }  else {
+                         // TODO: if piece picked up isn't valid second piece, blink lights or some shit. CHECK FOR EN PESSANT OR 
+                        
+                    }
 
                 // if first piece picked up is put back on starting square, turn off lights and reset pickup state accordingly
                 } else if (game->currentBoardState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 1) {

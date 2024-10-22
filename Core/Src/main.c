@@ -92,6 +92,13 @@ osMutexId_t animateMutexHandle;
 const osMutexAttr_t animateMutex_attributes = {
   .name = "animateMutex"
 };
+
+/* Definitions for animateMutex */
+osMutexId_t blinkErrorTaskMutex;
+const osMutexAttr_t blink_error_task_mutex_attributes = {
+  .name = "blinkErrorTaskMutex"
+};
+
 /* USER CODE BEGIN PV */
 extern USBD_HandleTypeDef hUsbDeviceFS;
 extern uint8_t lightsOffArr[8][8];
@@ -217,10 +224,8 @@ int main(void)
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
 
 
-  const osMutexAttr_t myMutex_attributes = {
-    .name = "animateLightsMutex"
-  };
   animateLightsMutex = osSemaphoreNew(1, 0, animateLightsMutex);
+  blinkErrorTaskMutex = osSemaphoreNew(1, 0, blinkErrorTaskMutex);
 
   //TODO: init SPI and make sure CLOCK TURNS ON!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1 
   for(int i = 0; i < 8; i++) {
@@ -313,7 +318,7 @@ int main(void)
   // blinkErrorTaskHandle = osThreadNew(blinkError, NULL, &blinkErrorTask_attributes);
 
   /* creation of updateTimeTask */
-  // updateTimeTaskHandle = osThreadNew(updateTime, NULL, &updateTimeTask_attributes);
+  updateTimeTaskHandle = osThreadNew(updateTime, NULL, &updateTimeTask_attributes);
 
   /* creation of updateMoveTask */
   updateMoveTaskHandle = osThreadNew(updateMove, NULL, &updateMoveTask_attributes);
@@ -870,7 +875,7 @@ void updateMove(void *argument)
 
     }
 
-    updateTimeOld();
+    // updateTimeOld();
 
     if (game.gameStarted) {
       //calculate if move occurred and capture data related to said move
