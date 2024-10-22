@@ -219,9 +219,12 @@ int main(void)
   max7219_Decode_On();
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
 
-
+  const osMutexAttr_t myMutex_attributes = {
+    .name = "animateLightsMutex"
+  };
   animateLightsMutex = osSemaphoreNew(1, 0, animateLightsMutex);
-
+  
+  osMessageQueueNew(1, sizeof(struct ErrorMessage), NULL);
   //TODO: init SPI and make sure CLOCK TURNS ON!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1 
   for(int i = 0; i < 8; i++) {
     ledstate[i] = 0xA2;
