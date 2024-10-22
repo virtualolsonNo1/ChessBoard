@@ -18,7 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "cmsis_os.h"
+#include "cmsis_os2.h"
 #include "usb_device.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -92,6 +92,10 @@ osMutexId_t animateMutexHandle;
 const osMutexAttr_t animateMutex_attributes = {
   .name = "animateMutex"
 };
+
+osMessageQueueId_t errorQueueHandle;
+struct ErrorMessage errorMessage;
+
 /* USER CODE BEGIN PV */
 extern USBD_HandleTypeDef hUsbDeviceFS;
 extern uint8_t lightsOffArr[8][8];
@@ -221,6 +225,8 @@ int main(void)
     .name = "animateLightsMutex"
   };
   animateLightsMutex = osSemaphoreNew(1, 0, animateLightsMutex);
+  
+  osMessageQueueNew(1, sizeof(struct ErrorMessage), NULL);
 
   //TODO: init SPI and make sure CLOCK TURNS ON!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1 
   for(int i = 0; i < 8; i++) {
@@ -310,10 +316,10 @@ int main(void)
 
   /* Create the thread(s) */
   /* creation of blinkErrorTask */
-  // blinkErrorTaskHandle = osThreadNew(blinkError, NULL, &blinkErrorTask_attributes);
+  blinkErrorTaskHandle = osThreadNew(blinkError, NULL, &blinkErrorTask_attributes);
 
   /* creation of updateTimeTask */
-  // updateTimeTaskHandle = osThreadNew(updateTime, NULL, &updateTimeTask_attributes);
+  updateTimeTaskHandle = osThreadNew(updateTime, NULL, &updateTimeTask_attributes);
 
   /* creation of updateMoveTask */
   updateMoveTaskHandle = osThreadNew(updateMove, NULL, &updateMoveTask_attributes);
@@ -806,10 +812,64 @@ void blinkError(void *argument)
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 5 */
+  uint8_t blinkLightsArr[8][8];
   /* Infinite loop */
   for(;;)
   {
-    osDelay(portMAX_DELAY);
+    osMessageQueueGet(errorQueueHandle, &errorMessage, NULL, osWaitForever);
+    int count = 0;
+    bool inErrorState = true;
+    while(inErrorState) {
+      
+      if (errorMessage.resetState == NO_PIECE_PICKUP && errorMessage.numPieces == 1) {
+        //de-assert and re-assert load pin to load values into register's D flip flops
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
+        osDelay(1);
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
+
+        //transmit MISO data from shift registers into boardstate buffer
+        HAL_SPI_Receive(&hspi1, (uint8_t *)boardstate, 8, 100000);
+
+        //turn received boardstate into 2d array instead of 1d array of uint8_t's
+        while((SPI1->SR & 0b1)) {}
+        
+        //constatntly store state of board in game so can be used when button is pressed
+        for(int i = 0; i < 8; i++) {
+          game.currentBoardState[i][0] = (0b10000000 & ~boardstate[i]) >> 7; 
+          game.currentBoardState[i][1] = (0b01000000 & ~boardstate[i]) >> 6; 
+          game.currentBoardState[i][2] = (0b00100000 & ~boardstate[i]) >> 5; 
+          game.currentBoardState[i][3] = (0b00010000 & ~boardstate[i]) >> 4; 
+          game.currentBoardState[i][4] = (0b00001000 & ~boardstate[i]) >> 3; 
+          game.currentBoardState[i][5] = (0b00000100 & ~boardstate[i]) >> 2; 
+          game.currentBoardState[i][6] = (0b00000010 & ~boardstate[i]) >> 1; 
+          game.currentBoardState[i][7] = (0b00000001 & ~boardstate[i]) >> 0; 
+
+        }
+        
+        if (game.currentBoardState[errorMessage.firstPickupRow][errorMessage.firstPickupCol] == 1) {
+          osThreadResume(updateMoveTaskHandle);
+          inErrorState = false;
+          break;
+
+        } else {
+          if (count % 2 == 0) {
+            memset(blinkLightsArr, 1, 64);
+          } else {
+            memset(blinkLightsArr, 0, 64);
+          }
+          blinkLightsArr[errorMessage.firstPickupRow][errorMessage.firstPickupCol] = 1;
+          memcpy(game.currentMove->lightState, blinkLightsArr, 64);
+          updateLights();
+          count++;
+
+          // TODO: UPDATE SO IT'S NOT A HALF SECOND DELAY ON CHECKING BOARD!!!!!!!!
+          osDelay(500);
+        }
+
+      }
+      
+    osDelay(1);
+    }
   }
   /* USER CODE END 5 */
 }
@@ -870,7 +930,7 @@ void updateMove(void *argument)
 
     }
 
-    updateTimeOld();
+    // updateTimeOld();
 
     if (game.gameStarted) {
       //calculate if move occurred and capture data related to said move
@@ -939,7 +999,7 @@ void animateLights(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    osSemaphoreAcquire(animateLightsMutex, portMAX_DELAY);
+    osSemaphoreAcquire(animateLightsMutex, osWaitForever);
     animateInitialLights();
     osDelay(1);
   }

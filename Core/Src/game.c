@@ -6,6 +6,7 @@
 #include "usb.h"
 #include "usbd_def.h"
 #include "usbd_customhid.h"
+#include "cmsis_os2.h"
 #include <ctype.h>
 
 
@@ -199,10 +200,9 @@ void updateMoveShit(struct GameState* game) {
                         game->currentMove->lightState[i][j] = 1;
                         game->currentMove->lightsOn = true;
                         updateLights();
-                    } 
-                    /* } else {
-                        // TODO: if piece picked up isn't valid second piece, blink lights or some shit. CHECK FOR EN PESSANT OR 
-                    } */
+                    } else {
+                        // TODO: if piece picked up isn't valid second piece, blink lights or some shit. CHECK FOR EN PESSANT OR CASTLING
+                    }
 
                 // if first piece picked up is put back on starting square, turn off lights and reset pickup state accordingly
                 } else if (game->currentBoardState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 1) {
@@ -231,6 +231,7 @@ void updateMoveShit(struct GameState* game) {
             } else if (!game->currentMove->isFinalState && game->currentMove->pickupState == SECOND_PIECE_PICKUP) {
                 //TODO: MAKE IT SO EN PESSANT AND CASTLING WORK!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 //TODO: CHECK THAT WHERE PIECE IS SET DOWN IS VALID?????????????????????????????????????????!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! EXTRA CHECK NEEDED IF FIRST PICKUP WAS OPPONENT'S PIECE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                // MAKE IT SO WHEN BOTH PIECES PUT DOWN, GO BACK TO INITIAL PICKUP STATE
                 
             } else if(game->currentMove->isFinalState) {
                 bool enteredOne = false;
@@ -381,6 +382,7 @@ void lightsOff() {
     uint8_t lightsOff[8][8] = {0};
     game.currentMove->lightsOn = false;
     memcpy(game.currentMove->lightState, lightsOffArr, 64);
+    memcpy(game.currentMove->allPieceLights, lightsOffArr, 64);
     updateLights();
 }
 

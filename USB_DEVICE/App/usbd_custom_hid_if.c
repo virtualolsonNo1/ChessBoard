@@ -30,6 +30,9 @@
 
 extern HIDClockModeReports clockModeReport;
 extern osSemaphoreId_t animateLightsMutex;
+extern osThreadId_t updateMoveTaskHandle;
+extern osMessageQueueId_t errorQueueHandle;
+extern struct ErrorMessage errorMessage;
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -286,11 +289,32 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
     memcpy(game.currentMove->allPieceLights, game.currentMove->lightState, 64);
     volatile int x = 1;
     game.currentMove->receivedLightData = true;
+    
+    bool possibleMove = false;
+    for(int i = 0; i < 8; i++) {
+      for(int j = 0; j < 8; j++) {
+        if (game.currentMove->allPieceLights[i][j] == 1) {
+          possibleMove = true;
+          break;
+        } 
+      }
+    }
+    if (!possibleMove) {
+      osThreadSuspend(updateMoveTaskHandle);
+      if (game.currentMove->pickupState == FIRST_PIECE_PICKUP) {
+        errorMessage.numPieces = 1;
+        errorMessage.resetState = NO_PIECE_PICKUP;
+        errorMessage.firstPickupRow = clockModeReport.firstPickupRow;
+        errorMessage.firstPickupCol = clockModeReport.firstPickupCol;
+      }
+      osMessageQueuePut(errorQueueHandle, &errorMessage, NULL, osWaitForever);
+    } else {
       if (game.currentMove->firstPiecePlayersColor && game.previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] != 'n' && game.previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] != 'N') {
         osSemaphoreRelease(animateLightsMutex);
       } else {
         updateReceivedLights();
       }
+    }
   }
   
 

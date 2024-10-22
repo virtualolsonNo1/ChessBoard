@@ -56,6 +56,14 @@ struct MoveState {
     uint8_t pieceNewCol;
 };
 
+struct ErrorMessage {
+    uint8_t numPieces;
+    enum PickupState resetState;
+    uint8_t firstPickupRow;
+    uint8_t firstPickupCol;
+    uint8_t secondPickupRow;
+    uint8_t secondPickupCol;
+};
 
 struct GameState {
     struct Player* activePlayer;
