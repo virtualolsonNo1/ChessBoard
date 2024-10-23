@@ -153,6 +153,11 @@ void resetGame(struct GameState* game) {
     return;
 }
 
+
+void checkCastling() {
+    // if (game.previousState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == "K" && (game.currentMove->allPieceLights[clockModeReport.firstPickupRow][]))
+}
+
 void updateMoveShit(struct GameState* game) {
     for(int i = 0; i < 8; i++) {
         for(int j = 0; j < 8; j++) {
@@ -184,9 +189,6 @@ void updateMoveShit(struct GameState* game) {
 
                 // if a second piece is picked up, change state accordingly and update which piece was picked up
                 if (!(i == clockModeReport.firstPickupRow && j == clockModeReport.firstPickupCol) && game->previousState[i][j] == 1 && game->currentBoardState[i][j] == 0) {
-                // TODO: ADD LIGHTS OFF AND THEN TURN ON LIGHT OF FIRST SQUARE AND PIECE PICKED UP SQUARE
-                    // if (game->currentMove->lightsOn ) {
-                    //     if(game->currentMove->allPieceLights[i][j] == 1) {
                     // update square info for picked up piece
                     clockModeReport.report2.secondPickupRow = i;
                     clockModeReport.report2.secondPickupCol = j;
@@ -195,13 +197,14 @@ void updateMoveShit(struct GameState* game) {
                     game->currentMove->pickupState = SECOND_PIECE_PICKUP;
                     // if (game->currentMove->lightsOn && !game->currentMove->firstPiecePlayersColor && game->currentBoardState[i][j] == 0 && game->currentMove->allPieceLights[i][j] == 1 && game->previousState[i][j] == 1) {
                     // TODO: CASTLING AND EN PASSANT DON"T MEET THESE REQUIREMENTS SO NEED EXTRA CASE!!!!!!!!!!!!
-                    if (game->currentMove->lightsOn && game->currentBoardState[i][j] == 0 && game->currentMove->allPieceLights[i][j] == 1 && game->previousState[i][j] == 1) {
+                    if (game->currentMove->lightsOn && game->currentMove->allPieceLights[i][j] == 1) {
                         memset(game->currentMove->lightState, 0, 64);
                         game->currentMove->lightState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] = 1;
                         game->currentMove->lightState[i][j] = 1;
                         game->currentMove->lightsOn = true;
                         updateLights();
                     } else {
+                        // not potential final spot for piece, but could be en passant or castling
                         // TODO: if piece picked up isn't valid second piece, blink lights or some shit. CHECK FOR EN PESSANT OR CASTLING
                     }
 
@@ -232,20 +235,24 @@ void updateMoveShit(struct GameState* game) {
 
             // if move is over by button press or timer
             } else if (!game->currentMove->isFinalState && game->currentMove->pickupState == SECOND_PIECE_PICKUP) {
+                // TODO: ADD CHECK IF ANOTHER PIECE IS PICKED UP ERROR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 // TODO: replace with memcmp
-                for(int a = 0; a < 8; a++) {
-                    for(int b = 0; b < 8; b++) {
-                        if (game->previousState[a][b] != game->currentBoardState[a][b]) {
-                            return;
-                        }
-                    }
-                }
+                // for(int a = 0; a < 8; a++) {
+                //     for(int b = 0; b < 8; b++) {
+                //         if (game->previousState[a][b] != game->currentBoardState[a][b]) {
+                //             return;
+                //         }
+                //     }
+                // }
+                if (memcmp(game->previousState, game->currentBoardState, 64) == 0) {
 
-                game->currentMove->pickupState = NO_PIECE_PICKUP;
-                lightsOff();
+                    game->currentMove->pickupState = NO_PIECE_PICKUP;
+                    lightsOff();
+                } else {
+                    return;
+                }
                 //TODO: MAKE IT SO EN PESSANT AND CASTLING WORK!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 //TODO: CHECK THAT WHERE PIECE IS SET DOWN IS VALID?????????????????????????????????????????!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! EXTRA CHECK NEEDED IF FIRST PICKUP WAS OPPONENT'S PIECE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                // MAKE IT SO WHEN BOTH PIECES PUT DOWN, GO BACK TO INITIAL PICKUP STATE
                 
             } else if(game->currentMove->isFinalState) {
                 bool enteredOne = false;
