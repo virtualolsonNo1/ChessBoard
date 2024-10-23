@@ -232,6 +232,7 @@ void updateMoveShit(struct GameState* game) {
 
             // if move is over by button press or timer
             } else if (!game->currentMove->isFinalState && game->currentMove->pickupState == SECOND_PIECE_PICKUP) {
+                // TODO: replace with memcmp
                 for(int a = 0; a < 8; a++) {
                     for(int b = 0; b < 8; b++) {
                         if (game->previousState[a][b] != game->currentBoardState[a][b]) {
