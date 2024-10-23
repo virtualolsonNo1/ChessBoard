@@ -33,6 +33,7 @@ extern osSemaphoreId_t animateLightsMutex;
 extern osThreadId_t updateMoveTaskHandle;
 extern osMessageQueueId_t errorQueueHandle;
 extern struct ErrorMessage errorMessage;
+bool isErrorState = false;
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -300,14 +301,14 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
       }
     }
     if (!possibleMove) {
-      osThreadSuspend(updateMoveTaskHandle);
+      // set isErrorState to true so update move thread can suspend itself later and start blink error task
+      isErrorState = true;
       if (game.currentMove->pickupState == FIRST_PIECE_PICKUP) {
         errorMessage.numPieces = 1;
         errorMessage.resetState = NO_PIECE_PICKUP;
         errorMessage.firstPickupRow = clockModeReport.firstPickupRow;
         errorMessage.firstPickupCol = clockModeReport.firstPickupCol;
       }
-      osMessageQueuePut(errorQueueHandle, &errorMessage, NULL, osWaitForever);
     } else {
       if (game.currentMove->firstPiecePlayersColor && game.previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] != 'n' && game.previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] != 'N') {
         osSemaphoreRelease(animateLightsMutex);

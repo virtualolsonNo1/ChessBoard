@@ -98,6 +98,7 @@ struct ErrorMessage errorMessage;
 /* USER CODE BEGIN PV */
 extern USBD_HandleTypeDef hUsbDeviceFS;
 extern uint8_t lightsOffArr[8][8];
+extern bool isErrorState;
 osSemaphoreId_t animateLightsMutex;
 
 /* USER CODE END PV */
@@ -223,8 +224,15 @@ int main(void)
     .name = "animateLightsMutex"
   };
   animateLightsMutex = osSemaphoreNew(1, 0, animateLightsMutex);
-  
-  osMessageQueueNew(1, sizeof(struct ErrorMessage), NULL);
+  const osMessageQueueAttr_t errorQueue_attributes = {
+      .name = "ErrorQueue",     // Queue name for debugging
+      .attr_bits = 0,          // Queue attributes
+      .cb_mem = NULL,          // Memory for queue control block (NULL = allocate from pool)
+      .cb_size = 0,            // Size of queue control block
+      .mq_mem = NULL,          // Memory for queue data (NULL = allocate from pool)
+      .mq_size = 0            // Size of queue data
+  };
+  errorQueueHandle = osMessageQueueNew(1, sizeof(struct ErrorMessage), &errorQueue_attributes);
   //TODO: init SPI and make sure CLOCK TURNS ON!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1 
   for(int i = 0; i < 8; i++) {
     ledstate[i] = 0xA2;
@@ -845,7 +853,11 @@ void blinkError(void *argument)
         
         if (game.currentBoardState[errorMessage.firstPickupRow][errorMessage.firstPickupCol] == 1) {
           osThreadResume(updateMoveTaskHandle);
+          game.currentMove->pickupState = NO_PIECE_PICKUP;
+          game.currentMove->lightsOn = false;
+          isErrorState = false;
           inErrorState = false;
+          lightsOff();
           break;
 
         } else {
@@ -903,6 +915,10 @@ void updateMove(void *argument)
   /* Infinite loop */
   for(;;)
   {
+    if (isErrorState) {
+      osMessageQueuePut(errorQueueHandle, &errorMessage, NULL, osWaitForever);
+      osThreadSuspend(updateMoveTaskHandle);
+    }
     //de-assert and re-assert load pin to load values into register's D flip flops
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
     osDelay(1);

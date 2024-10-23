@@ -294,7 +294,7 @@ void convert2DArrayToBitarray(const uint8_t input[8][8], uint8_t output[8]) {
 
 
 void updateReceivedLights() {
-   if (game.currentMove->receivedLightData && !(game.currentMove->lightsOn)) {
+//    if (game.currentMove->receivedLightData && !(game.currentMove->lightsOn)) {
         game.currentMove->lightsOn = true;
         uint8_t lights[8];
         convert2DArrayToBitarray(game.currentMove->allPieceLights, lights);       
@@ -307,7 +307,7 @@ void updateReceivedLights() {
       while(!(GPIOA->ODR & GPIO_PIN_10)) {}
       HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
       while((GPIOA->ODR & GPIO_PIN_10)) {}
-   }
+//    }
 }
 
 void updateLights() {
