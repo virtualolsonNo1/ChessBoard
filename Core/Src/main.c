@@ -851,7 +851,24 @@ void blinkError(void *argument)
 
         }
         
-        if (game.currentBoardState[errorMessage.firstPickupRow][errorMessage.firstPickupCol] == 1) {
+        if (count % 2 == 0) {
+          memset(blinkLightsArr, 1, 64);
+        } else {
+          memset(blinkLightsArr, 0, 64);
+        }
+
+        // light up all pieces that are off board but need put back to get back to beginning of move
+        bool arrsSame = true;
+        for(int i = 0; i < 8; i++) {
+          for(int j = 0; j < 8; j++) {
+            if (game.currentBoardState[i][j] != game.previousState[i][j]) {
+              arrsSame = false;
+              blinkLightsArr[i][j] = 1;
+            }
+          }
+        }
+
+        if (arrsSame) {
           osThreadResume(updateMoveTaskHandle);
           game.currentMove->pickupState = NO_PIECE_PICKUP;
           game.currentMove->lightsOn = false;
@@ -861,12 +878,7 @@ void blinkError(void *argument)
           break;
 
         } else {
-          if (count % 2 == 0) {
-            memset(blinkLightsArr, 1, 64);
-          } else {
-            memset(blinkLightsArr, 0, 64);
-          }
-          blinkLightsArr[errorMessage.firstPickupRow][errorMessage.firstPickupCol] = 1;
+          // blinkLightsArr[errorMessage.firstPickupRow][errorMessage.firstPickupCol] = 1;
           memcpy(game.currentMove->lightState, blinkLightsArr, 64);
           updateLights();
           count++;

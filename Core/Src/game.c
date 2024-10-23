@@ -208,6 +208,8 @@ void updateMoveShit(struct GameState* game) {
                 // if first piece picked up is put back on starting square, turn off lights and reset pickup state accordingly
                 } else if (game->currentBoardState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 1) {
                     game->currentMove->pickupState = NO_PIECE_PICKUP;
+                    game->currentMove->receivedLightData = false;
+                    game->currentMove->lightsOn = false;
                     lightsOff();
                     return;
 
@@ -230,6 +232,16 @@ void updateMoveShit(struct GameState* game) {
 
             // if move is over by button press or timer
             } else if (!game->currentMove->isFinalState && game->currentMove->pickupState == SECOND_PIECE_PICKUP) {
+                for(int a = 0; a < 8; a++) {
+                    for(int b = 0; b < 8; b++) {
+                        if (game->previousState[a][b] != game->currentBoardState[a][b]) {
+                            return;
+                        }
+                    }
+                }
+
+                game->currentMove->pickupState = NO_PIECE_PICKUP;
+                lightsOff();
                 //TODO: MAKE IT SO EN PESSANT AND CASTLING WORK!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 //TODO: CHECK THAT WHERE PIECE IS SET DOWN IS VALID?????????????????????????????????????????!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! EXTRA CHECK NEEDED IF FIRST PICKUP WAS OPPONENT'S PIECE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 // MAKE IT SO WHEN BOTH PIECES PUT DOWN, GO BACK TO INITIAL PICKUP STATE
@@ -381,6 +393,7 @@ void animateInitialLights() {
 
 void lightsOff() {
     uint8_t lightsOff[8][8] = {0};
+    game.currentMove->receivedLightData = false;
     game.currentMove->lightsOn = false;
     memcpy(game.currentMove->lightState, lightsOffArr, 64);
     memcpy(game.currentMove->allPieceLights, lightsOffArr, 64);
