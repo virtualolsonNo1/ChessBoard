@@ -29,10 +29,12 @@
 #include "cmsis_os2.h"
 
 extern HIDClockModeReports clockModeReport;
-extern osSemaphoreId_t animateLightsMutex;
+extern osSemaphoreId_t animateLightsSem;
+extern osSemaphoreId_t checkCastleSem;
 extern osThreadId_t updateMoveTaskHandle;
 extern osMessageQueueId_t errorQueueHandle;
 extern struct ErrorMessage errorMessage;
+extern bool waitForCastlingResponse;
 bool isErrorState = false;
 /* USER CODE END INCLUDE */
 
@@ -310,8 +312,12 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
         errorMessage.firstPickupCol = clockModeReport.firstPickupCol;
       }
     } else {
+      if (waitForCastlingResponse) {
+        osSemaphoreRelease(checkCastleSem);
+        return;
+      }
       if (game.currentMove->firstPiecePlayersColor && game.previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] != 'n' && game.previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] != 'N') {
-        osSemaphoreRelease(animateLightsMutex);
+        osSemaphoreRelease(animateLightsSem);
       } else {
         updateReceivedLights();
       }

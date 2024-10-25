@@ -14,7 +14,12 @@ extern HIDClockModeReports clockModeReport;
 extern USBD_HandleTypeDef hUsbDeviceFS;
 extern SPI_HandleTypeDef hspi1;
 extern struct GameState game;
+extern osMutexId_t checkCastleSem;
+extern struct ErrorMessage errorMessage;
+extern bool isErrorState;
 HIDClockModeReports lightReport;
+
+bool waitForCastlingResponse;
 
 uint8_t lightsOffArr[8][8] = {0};
 
@@ -154,8 +159,53 @@ void resetGame(struct GameState* game) {
 }
 
 
-void checkCastling() {
-    // if (game.previousState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == "K" && (game.currentMove->allPieceLights[clockModeReport.firstPickupRow][]))
+bool checkCastling() {
+    bool enteredOne = false;
+    if ((game.previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'K' && game.previousStateChar[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 'R' ) || (game.previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'k' && game.previousStateChar[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 'r' )) {
+        // if first piece picked up is a king, and to the left castling is possible and the rook is the one that was picked up, light up those squares 
+        if (game.currentMove->allPieceLights[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol - 2] == 1 && clockModeReport.report2.secondPickupCol == 0) {
+            memset(game.currentMove->lightState, 0, 64);
+           game.currentMove->lightState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol - 1] = 1;  
+           game.currentMove->lightState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol - 2] = 1;  
+           enteredOne = true;
+        } 
+        if (game.currentMove->allPieceLights[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol + 2] == 1 && clockModeReport.report2.secondPickupCol == 7)  {
+            memset(game.currentMove->lightState, 0, 64);
+           game.currentMove->lightState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol + 1] = 1;  
+           game.currentMove->lightState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol + 2] = 1;  
+           enteredOne = true;
+        } 
+    
+    } else if ((game.previousStateChar[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 'K' && game.previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'R' ) || (game.previousStateChar[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 'k' && game.previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'r' )) {
+        // if first pickup is rook and second King, check for castling with desktop app!!!!!!!!!!!!!
+        waitForCastlingResponse = true;
+        lightReport.reportId = 3;
+        lightReport.report3.reset = clockModeReport.report2.secondPickupRow << 3 | clockModeReport.report2.secondPickupCol;
+        USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint32_t*)&lightReport, 2);
+        osSemaphoreAcquire(checkCastleSem, osWaitForever);
+        // USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS);
+        waitForCastlingResponse = false;
+        // if first piece picked up is a king, and to the left castling is possible and the rook is the one that was picked up, light up those squares 
+        if (game.currentMove->allPieceLights[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol - 2] == 1 && clockModeReport.firstPickupCol == 0) {
+            memset(game.currentMove->lightState, 0, 64);
+           game.currentMove->lightState[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol - 1] = 1;  
+           game.currentMove->lightState[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol - 2] = 1;  
+           enteredOne = true;
+        } 
+        if (game.currentMove->allPieceLights[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol + 2] == 1 && clockModeReport.firstPickupCol == 7)  {
+            memset(game.currentMove->lightState, 0, 64);
+           game.currentMove->lightState[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol + 1] = 1;  
+           game.currentMove->lightState[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol + 2] = 1;  
+           enteredOne = true;
+        } 
+    }     
+
+    // return true if castling is an option and the pieces picked up were 
+    if (enteredOne) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 void updateMoveShit(struct GameState* game) {
@@ -205,7 +255,22 @@ void updateMoveShit(struct GameState* game) {
                         updateLights();
                     } else {
                         // not potential final spot for piece, but could be en passant or castling
-                        // TODO: if piece picked up isn't valid second piece, blink lights or some shit. CHECK FOR EN PESSANT OR CASTLING
+                        // TODO: CHECK FOR EN PESSANT and if third+ piece picked up
+                        if (checkCastling()) {
+                            game->currentMove->lightsOn = true;
+                            updateLights();
+
+                        // if second move is not possible given first piece picked up, blink error!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                        } else {
+                            // set isErrorState to true so update move thread can suspend itself later and start blink error task
+                            isErrorState = true;
+                            errorMessage.numPieces = 1;
+                            errorMessage.resetState = FIRST_PIECE_PICKUP;
+                            
+                            // send in firstPickupRow and firstPickupCol so it knows what initial piece was picked up and is still picked up
+                            errorMessage.firstPickupRow = clockModeReport.firstPickupRow;
+                            errorMessage.firstPickupCol = clockModeReport.firstPickupCol;
+                        }
                     }
 
                 // if first piece picked up is put back on starting square, turn off lights and reset pickup state accordingly
@@ -342,6 +407,8 @@ void updateLights() {
     while(!(GPIOA->ODR & GPIO_PIN_10)) {}
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
     while((GPIOA->ODR & GPIO_PIN_10)) {}
+
+    osDelay(5);
 }
 
 
@@ -396,15 +463,15 @@ void animateInitialLights() {
 
         // HAL_Delay(20);
     }
+    osDelay(5);
 }
 
 
 void lightsOff() {
-    uint8_t lightsOff[8][8] = {0};
     game.currentMove->receivedLightData = false;
     game.currentMove->lightsOn = false;
-    memcpy(game.currentMove->lightState, lightsOffArr, 64);
-    memcpy(game.currentMove->allPieceLights, lightsOffArr, 64);
+    memset(game.currentMove->lightState, 0, 64);
+    memset(game.currentMove->allPieceLights, 0, 64);
     updateLights();
 }
 

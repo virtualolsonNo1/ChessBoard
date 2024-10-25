@@ -86,12 +86,9 @@ const osThreadAttr_t animLightsTask_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
-/* Definitions for animateMutex */
-osMutexId_t animateMutexHandle;
-const osMutexAttr_t animateMutex_attributes = {
-  .name = "animateMutex"
-};
 
+osSemaphoreId_t animateLightsSem;
+osSemaphoreId_t checkCastleSem;
 osMessageQueueId_t errorQueueHandle;
 struct ErrorMessage errorMessage;
 
@@ -99,7 +96,6 @@ struct ErrorMessage errorMessage;
 extern USBD_HandleTypeDef hUsbDeviceFS;
 extern uint8_t lightsOffArr[8][8];
 extern bool isErrorState;
-osSemaphoreId_t animateLightsMutex;
 
 /* USER CODE END PV */
 
@@ -220,10 +216,8 @@ int main(void)
   max7219_Decode_On();
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
 
-  const osMutexAttr_t myMutex_attributes = {
-    .name = "animateLightsMutex"
-  };
-  animateLightsMutex = osSemaphoreNew(1, 0, animateLightsMutex);
+  animateLightsSem = osSemaphoreNew(1, 0, animateLightsSem);
+  checkCastleSem = osSemaphoreNew(1, 0, checkCastleSem);
   const osMessageQueueAttr_t errorQueue_attributes = {
       .name = "ErrorQueue",     // Queue name for debugging
       .attr_bits = 0,          // Queue attributes
@@ -301,7 +295,6 @@ int main(void)
   osKernelInitialize();
   /* Create the mutex(es) */
   /* creation of animateMutex */
-  animateMutexHandle = osMutexNew(&animateMutex_attributes);
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
@@ -826,7 +819,7 @@ void blinkError(void *argument)
     bool inErrorState = true;
     while(inErrorState) {
       
-      if (errorMessage.resetState == NO_PIECE_PICKUP && errorMessage.numPieces == 1) {
+      if ((errorMessage.resetState == NO_PIECE_PICKUP && errorMessage.numPieces == 1) || errorMessage.resetState == FIRST_PIECE_PICKUP) {
         //de-assert and re-assert load pin to load values into register's D flip flops
         HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
         osDelay(1);
@@ -862,8 +855,13 @@ void blinkError(void *argument)
         for(int i = 0; i < 8; i++) {
           for(int j = 0; j < 8; j++) {
             if (game.currentBoardState[i][j] != game.previousState[i][j]) {
-              arrsSame = false;
-              blinkLightsArr[i][j] = 1;
+              if (errorMessage.resetState == NO_PIECE_PICKUP) {
+                arrsSame = false;
+                blinkLightsArr[i][j] = 1;
+              } else if (errorMessage.resetState == FIRST_PIECE_PICKUP && !(i == errorMessage.firstPickupRow && j == errorMessage.firstPickupCol)) {
+                arrsSame = false;
+                blinkLightsArr[i][j] = 1;
+              }
             }
           }
         }
@@ -875,6 +873,7 @@ void blinkError(void *argument)
           isErrorState = false;
           inErrorState = false;
           lightsOff();
+          
           break;
 
         } else {
@@ -1007,7 +1006,7 @@ void updateMove(void *argument)
     // osDelay(100);
 
     }
-    // osDelay(10);
+    osDelay(10);
   }
   /* USER CODE END updateMove */
 }
@@ -1025,7 +1024,7 @@ void animateLights(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    osSemaphoreAcquire(animateLightsMutex, osWaitForever);
+    osSemaphoreAcquire(animateLightsSem, osWaitForever);
     animateInitialLights();
     osDelay(1);
   }
