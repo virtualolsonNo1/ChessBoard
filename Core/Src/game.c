@@ -313,9 +313,11 @@ void updateMoveShit(struct GameState* game) {
 
                     game->currentMove->pickupState = NO_PIECE_PICKUP;
                     lightsOff();
-                } else {
-                    return;
-                }
+                } else if (!(i == clockModeReport.firstPickupRow && j == clockModeReport.firstPickupCol) && !(i == clockModeReport.report2.secondPickupRow && j == clockModeReport.report2.secondPickupCol) && game->previousState[i][j] == 1 && game->currentBoardState[i][j] == 0) {
+                    isErrorState = true;
+                    errorMessage.numPieces = 2;
+                    errorMessage.resetState = SECOND_PIECE_PICKUP;
+                } 
                 //TODO: MAKE IT SO EN PESSANT AND CASTLING WORK!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 //TODO: CHECK THAT WHERE PIECE IS SET DOWN IS VALID?????????????????????????????????????????!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! EXTRA CHECK NEEDED IF FIRST PICKUP WAS OPPONENT'S PIECE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 

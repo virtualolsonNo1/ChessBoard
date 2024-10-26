@@ -819,37 +819,37 @@ void blinkError(void *argument)
     bool inErrorState = true;
     while(inErrorState) {
       
-      if ((errorMessage.resetState == NO_PIECE_PICKUP && errorMessage.numPieces == 1) || errorMessage.resetState == FIRST_PIECE_PICKUP) {
-        //de-assert and re-assert load pin to load values into register's D flip flops
-        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
-        osDelay(1);
-        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
+      //de-assert and re-assert load pin to load values into register's D flip flops
+      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
+      osDelay(1);
+      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
 
-        //transmit MISO data from shift registers into boardstate buffer
-        HAL_SPI_Receive(&hspi1, (uint8_t *)boardstate, 8, 100000);
+      //transmit MISO data from shift registers into boardstate buffer
+      HAL_SPI_Receive(&hspi1, (uint8_t *)boardstate, 8, 100000);
 
-        //turn received boardstate into 2d array instead of 1d array of uint8_t's
-        while((SPI1->SR & 0b1)) {}
-        
-        //constatntly store state of board in game so can be used when button is pressed
-        for(int i = 0; i < 8; i++) {
-          game.currentBoardState[i][0] = (0b10000000 & ~boardstate[i]) >> 7; 
-          game.currentBoardState[i][1] = (0b01000000 & ~boardstate[i]) >> 6; 
-          game.currentBoardState[i][2] = (0b00100000 & ~boardstate[i]) >> 5; 
-          game.currentBoardState[i][3] = (0b00010000 & ~boardstate[i]) >> 4; 
-          game.currentBoardState[i][4] = (0b00001000 & ~boardstate[i]) >> 3; 
-          game.currentBoardState[i][5] = (0b00000100 & ~boardstate[i]) >> 2; 
-          game.currentBoardState[i][6] = (0b00000010 & ~boardstate[i]) >> 1; 
-          game.currentBoardState[i][7] = (0b00000001 & ~boardstate[i]) >> 0; 
+      //turn received boardstate into 2d array instead of 1d array of uint8_t's
+      while((SPI1->SR & 0b1)) {}
+      
+      //constatntly store state of board in game so can be used when button is pressed
+      for(int i = 0; i < 8; i++) {
+        game.currentBoardState[i][0] = (0b10000000 & ~boardstate[i]) >> 7; 
+        game.currentBoardState[i][1] = (0b01000000 & ~boardstate[i]) >> 6; 
+        game.currentBoardState[i][2] = (0b00100000 & ~boardstate[i]) >> 5; 
+        game.currentBoardState[i][3] = (0b00010000 & ~boardstate[i]) >> 4; 
+        game.currentBoardState[i][4] = (0b00001000 & ~boardstate[i]) >> 3; 
+        game.currentBoardState[i][5] = (0b00000100 & ~boardstate[i]) >> 2; 
+        game.currentBoardState[i][6] = (0b00000010 & ~boardstate[i]) >> 1; 
+        game.currentBoardState[i][7] = (0b00000001 & ~boardstate[i]) >> 0; 
 
-        }
-        
-        if (count % 2 == 0) {
-          memset(blinkLightsArr, 1, 64);
-        } else {
-          memset(blinkLightsArr, 0, 64);
-        }
+      }
+      
+      if (count % 2 == 0) {
+        memset(blinkLightsArr, 1, 64);
+      } else {
+        memset(blinkLightsArr, 0, 64);
+      }
 
+      if ((errorMessage.resetState == NO_PIECE_PICKUP && errorMessage.numPieces == 1) || errorMessage.resetState == FIRST_PIECE_PICKUP || errorMessage.resetState == SECOND_PIECE_PICKUP) {
         // light up all pieces that are off board but need put back to get back to beginning of move
         bool arrsSame = true;
         for(int i = 0; i < 8; i++) {
@@ -861,6 +861,9 @@ void blinkError(void *argument)
               } else if (errorMessage.resetState == FIRST_PIECE_PICKUP && !(i == errorMessage.firstPickupRow && j == errorMessage.firstPickupCol)) {
                 arrsSame = false;
                 blinkLightsArr[i][j] = 1;
+              } else if (errorMessage.resetState == SECOND_PIECE_PICKUP && !(i == clockModeReport.firstPickupRow && j == clockModeReport.firstPickupCol) && !(i == clockModeReport.report2.secondPickupRow && j == clockModeReport.report2.secondPickupCol)) {
+                arrsSame = false;
+                blinkLightsArr[i][j] = 1;
               }
             }
           }
@@ -868,11 +871,20 @@ void blinkError(void *argument)
 
         if (arrsSame) {
           osThreadResume(updateMoveTaskHandle);
-          game.currentMove->pickupState = NO_PIECE_PICKUP;
           game.currentMove->lightsOn = false;
           isErrorState = false;
           inErrorState = false;
           lightsOff();
+          if (errorMessage.resetState == NO_PIECE_PICKUP || errorMessage.resetState == FIRST_PIECE_PICKUP) {
+            game.currentMove->pickupState = NO_PIECE_PICKUP;
+          } else if (errorMessage.resetState == SECOND_PIECE_PICKUP) {
+            game.currentMove->pickupState = SECOND_PIECE_PICKUP;
+            game.currentMove->lightsOn = true;
+            game.currentMove->receivedLightData = true;
+            game.currentMove->lightState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] = 1;
+            game.currentMove->lightState[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] = 1;
+            updateLights();
+          }
           
           break;
 
