@@ -31,6 +31,7 @@
 extern HIDClockModeReports clockModeReport;
 extern osSemaphoreId_t animateLightsSem;
 extern osSemaphoreId_t checkCastleSem;
+extern osSemaphoreId_t checkDesktopAppErrSem;
 extern osThreadId_t updateMoveTaskHandle;
 extern osMessageQueueId_t errorQueueHandle;
 extern struct ErrorMessage errorMessage;
@@ -107,57 +108,65 @@ extern struct GameState game;
 __ALIGN_BEGIN static uint8_t CUSTOM_HID_ReportDesc_FS[USBD_CUSTOM_HID_REPORT_DESC_SIZE] __ALIGN_END =
 {
   /* USER CODE BEGIN 0 */
-0x06, 0x00, 0xFF,  // Usage Page (Vendor Defined 0xFF00)
-0x09, 0x01,        // Usage (0x01)
-0xA1, 0x01,        // Collection (Application)
-// Report ID 1: 1 set of pickup data + finalStateRow and finalStateCol
-0x85, 0x01,        //   Report ID (1)
-0x15, 0x00,        //   Logical Minimum (0)
-0x25, 0x07,        //   Logical Maximum (7)
-0x75, 0x08,        //   Report Size (8 bits)
-0x95, 0x04,        //   Report Count (4)
-0x09, 0x02,        //   Usage (0x02 - firstPickupRow)
-0x09, 0x03,        //   Usage (0x03 - firstPickupCol)
-0x09, 0x04,        //   Usage (0x04 - finalStateRow)
-0x09, 0x05,        //   Usage (0x05 - finalStateCol)
-0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
-// Report ID 2: 2 sets of pickup data + finalStateRow and finalStateCol
-0x85, 0x02,        //   Report ID (2)
-0x15, 0x00,        //   Logical Minimum (0)
-0x25, 0x07,        //   Logical Maximum (7)
-0x75, 0x08,        //   Report Size (8 bits)
-0x95, 0x06,        //   Report Count (6)
-0x09, 0x02,        //   Usage (0x02 - firstPickupRow)
-0x09, 0x03,        //   Usage (0x03 - firstPickupCol)
-0x09, 0x06,        //   Usage (0x06 - secondPickupRow)
-0x09, 0x07,        //   Usage (0x07 - secondPickupCol)
-0x09, 0x04,        //   Usage (0x04 - finalStateRow)
-0x09, 0x05,        //   Usage (0x05 - finalStateCol)
-0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
-// Report ID 3: resetGame (1 byte data)
-0x85, 0x03,        //   Report ID (3)
-0x15, 0x00,        //   Logical Minimum (0)
-0x25, 0x01,        //   Logical Maximum (2)
-0x75, 0x08,        //   Report Size (8 bits)
-0x95, 0x01,        //   Report Count (1)
-0x09, 0x08,        //   Usage (0x08 - resetGame)
-0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
-// Report ID 4: 64-byte array for light status (Input)
-0x85, 0x04,        //   Report ID (4)
-0x15, 0x00,        //   Logical Minimum (0)
-0x25, 0x01,        //   Logical Maximum (1)
-0x75, 0x08,        //   Report Size (8 bits)
-0x95, 0x40,        //   Report Count (64)
-0x09, 0x09,        //   Usage (0x09 - Light Status)
-0x91, 0x02,        //   Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
-// Report ID 5: 64-byte array for letters/numbers (Output)
-0x85, 0x05,        //   Report ID (5)
-0x15, 0x30,        //   Logical Minimum (48)
-0x25, 0x7A,        //   Logical Maximum (122)
-0x75, 0x08,        //   Report Size (8 bits)
-0x95, 0x40,        //   Report Count (64)
-0x09, 0x0A,        //   Usage (0x0A - Letter/Number Array)
-0x91, 0x02,        //   Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+  0x06, 0x00, 0xFF,  // Usage Page (Vendor Defined 0xFF00)
+  0x09, 0x01,        // Usage (0x01)
+  0xA1, 0x01,        // Collection (Application)
+  // Report ID 1: 1 set of pickup data + finalStateRow and finalStateCol
+  0x85, 0x01,        //   Report ID (1)
+  0x15, 0x00,        //   Logical Minimum (0)
+  0x25, 0x07,        //   Logical Maximum (7)
+  0x75, 0x08,        //   Report Size (8 bits)
+  0x95, 0x04,        //   Report Count (4)
+  0x09, 0x02,        //   Usage (0x02 - firstPickupRow)
+  0x09, 0x03,        //   Usage (0x03 - firstPickupCol)
+  0x09, 0x04,        //   Usage (0x04 - finalStateRow)
+  0x09, 0x05,        //   Usage (0x05 - finalStateCol)
+  0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+  // Report ID 2: 2 sets of pickup data + finalStateRow and finalStateCol
+  0x85, 0x02,        //   Report ID (2)
+  0x15, 0x00,        //   Logical Minimum (0)
+  0x25, 0x07,        //   Logical Maximum (7)
+  0x75, 0x08,        //   Report Size (8 bits)
+  0x95, 0x06,        //   Report Count (6)
+  0x09, 0x02,        //   Usage (0x02 - firstPickupRow)
+  0x09, 0x03,        //   Usage (0x03 - firstPickupCol)
+  0x09, 0x06,        //   Usage (0x06 - secondPickupRow)
+  0x09, 0x07,        //   Usage (0x07 - secondPickupCol)
+  0x09, 0x04,        //   Usage (0x04 - finalStateRow)
+  0x09, 0x05,        //   Usage (0x05 - finalStateCol)
+  0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+  // Report ID 3: resetGame (1 byte data)
+  0x85, 0x03,        //   Report ID (3)
+  0x15, 0x00,        //   Logical Minimum (0)
+  0x25, 0x01,        //   Logical Maximum (2)
+  0x75, 0x08,        //   Report Size (8 bits)
+  0x95, 0x01,        //   Report Count (1)
+  0x09, 0x08,        //   Usage (0x08 - resetGame)
+  0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+  // Report ID 4: 64-byte array for light status (Input)
+  0x85, 0x04,        //   Report ID (4)
+  0x15, 0x00,        //   Logical Minimum (0)
+  0x25, 0x01,        //   Logical Maximum (1)
+  0x75, 0x08,        //   Report Size (8 bits)
+  0x95, 0x40,        //   Report Count (64)
+  0x09, 0x09,        //   Usage (0x09 - Light Status)
+  0x91, 0x02,        //   Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+  // Report ID 5: 64-byte array for letters/numbers (Output)
+  0x85, 0x05,        //   Report ID (5)
+  0x15, 0x30,        //   Logical Minimum (48)
+  0x25, 0x7A,        //   Logical Maximum (122)
+  0x75, 0x08,        //   Report Size (8 bits)
+  0x95, 0x40,        //   Report Count (64)
+  0x09, 0x0A,        //   Usage (0x0A - Letter/Number Array)
+  0x91, 0x02,        //   Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+  // Report ID 6: 1-byte error message (Output)
+  0x85, 0x06,        //   Report ID (6)
+  0x15, 0x00,        //   Logical Minimum (0)
+  0x25, 0xFF,        //   Logical Maximum (255)
+  0x75, 0x08,        //   Report Size (8 bits)
+  0x95, 0x01,        //   Report Count (1)
+  0x09, 0x0B,        //   Usage (0x0B - Error Message)
+  0x91, 0x02,        //   Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
   /* USER CODE END 0 */
   0xC0    /*     END_COLLECTION	             */
 };
@@ -274,17 +283,26 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
     memcpy(receivedData, hUsbDeviceFS.pClassData + 1, sizeof(receivedData) - 1);
     if (event_idx == 4)
       convert1DArrayTo2DArray(receivedData, game.currentMove->lightState);
-    else
+    else {
+      // if received light data, no error occurred on the desktop app end so can continue accordingly
+      osSemaphoreRelease(checkDesktopAppErrSem);
       convert1DArrayTo2DArray(receivedData, game.previousStateChar);
+    }
       
-    
-    // volatile int len = hUsbDeviceFS.ep_out;
+  // if error received from desktop app, replay the move as button hit too early or for wrong move DESPITE ALL THAT ERROR HANDLING cause people are dumb ig
+  } else if (event_idx == 6) {
+    uint8_t errorStatus;
+    memcpy(&errorStatus, hUsbDeviceFS.pClassData + 1, sizeof(1));
+    isErrorState = true;
+    errorMessage.numPieces = 1;
+    errorMessage.resetState = NO_PIECE_PICKUP;
+    osSemaphoreRelease(checkDesktopAppErrSem);
+    return;
 
   } else if (prevArr && prevID == 5) {
     prevID = 255;
     prevArr = false;
     memcpy(&game.previousStateChar[7][7], hUsbDeviceFS.pClassData, 1);
-    volatile int x = 1;
   } else if (prevArr && prevID == 4) {
     prevID = 255;
     prevArr = false;
@@ -316,6 +334,7 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
         osSemaphoreRelease(checkCastleSem);
         return;
       }
+      // if received light data and it's the player's peice that was picked up, if it's not a knight animate lights, otherwise just light up squares that can take piece or squares for a knight's moves
       if (game.currentMove->firstPiecePlayersColor && game.previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] != 'n' && game.previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] != 'N') {
         osSemaphoreRelease(animateLightsSem);
       } else {

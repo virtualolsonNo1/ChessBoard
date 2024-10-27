@@ -89,6 +89,7 @@ const osThreadAttr_t animLightsTask_attributes = {
 
 osSemaphoreId_t animateLightsSem;
 osSemaphoreId_t checkCastleSem;
+osSemaphoreId_t checkDesktopAppErrSem;
 osMessageQueueId_t errorQueueHandle;
 struct ErrorMessage errorMessage;
 
@@ -218,6 +219,7 @@ int main(void)
 
   animateLightsSem = osSemaphoreNew(1, 0, animateLightsSem);
   checkCastleSem = osSemaphoreNew(1, 0, checkCastleSem);
+  checkDesktopAppErrSem = osSemaphoreNew(1, 0, checkDesktopAppErrSem);
   const osMessageQueueAttr_t errorQueue_attributes = {
       .name = "ErrorQueue",     // Queue name for debugging
       .attr_bits = 0,          // Queue attributes
@@ -849,7 +851,8 @@ void blinkError(void *argument)
         memset(blinkLightsArr, 0, 64);
       }
 
-      if ((errorMessage.resetState == NO_PIECE_PICKUP && errorMessage.numPieces == 1) || errorMessage.resetState == FIRST_PIECE_PICKUP || errorMessage.resetState == SECOND_PIECE_PICKUP) {
+      // TODO: IS THIS EVEN NECESSARY???????????????????!!!!!!!!!!!!!!!!!!!!!!!!!
+      if (errorMessage.resetState == NO_PIECE_PICKUP || errorMessage.resetState == FIRST_PIECE_PICKUP || errorMessage.resetState == SECOND_PIECE_PICKUP) {
         // light up all pieces that are off board but need put back to get back to beginning of move
         bool arrsSame = true;
         for(int i = 0; i < 8; i++) {
@@ -880,7 +883,7 @@ void blinkError(void *argument)
           if (errorMessage.resetState == NO_PIECE_PICKUP || errorMessage.resetState == FIRST_PIECE_PICKUP) {
             game.currentMove->pickupState = NO_PIECE_PICKUP;
           } else if (errorMessage.resetState == SECOND_PIECE_PICKUP) {
-            game.currentMove->pickupState = SECOND_PIECE_PICKUP;
+            game.currentMove->pickupState = errorMessage.resetState;
             game.currentMove->lightsOn = true;
             game.currentMove->receivedLightData = true;
             game.currentMove->lightState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] = 1;
@@ -941,6 +944,7 @@ void updateMove(void *argument)
   for(;;)
   {
     if (isErrorState) {
+      // notify error queue with proper error message and suspend current task
       osMessageQueuePut(errorQueueHandle, &errorMessage, NULL, osWaitForever);
       osThreadSuspend(updateMoveTaskHandle);
     }
@@ -987,18 +991,45 @@ void updateMove(void *argument)
         
         clockModeReport.reportId = 2;
         USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 7);
-        // TODO: MAKE SURE THAT THE char state of board always looks right when playing
         USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS);
+        
+        // wait for response from desktop app if there was an error or not
+        osSemaphoreAcquire(checkDesktopAppErrSem, osWaitForever);
+        // TODO: MAKE SURE THAT THE char state of board always looks right when playing
       } else {
         clockModeReport.reportId = 1;
 
         USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 5);
         USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS);
+        // wait for response from desktop app if there was an error or not
+        osSemaphoreAcquire(checkDesktopAppErrSem, osWaitForever);
       }
+      
 
-    volatile int x = 1;
-
-    // osDelay(10);
+    // if move sent to desktop app is wrong because they play it in the wrong spot and hit button, etc
+    if (isErrorState) {
+      // check which player's turn it is now and reset it to previous player and turn on the appropriate clock
+      if (game.activePlayer == game.player2) {
+        game.activePlayer = game.player1;
+        HAL_TIM_Base_Stop(&htim5);
+        HAL_TIM_Base_Start(&htim2);
+      } else {
+        game.activePlayer = game.player2;
+        HAL_TIM_Base_Stop(&htim2);
+        HAL_TIM_Base_Start(&htim5);
+      }
+      game.isWhiteMove = !game.isWhiteMove;
+      game.currentMove->isFinalState = false;
+      
+      // notify error queue with proper error message and suspend current task
+      osMessageQueuePut(errorQueueHandle, &errorMessage, NULL, osWaitForever);
+      osThreadSuspend(updateMoveTaskHandle);
+      
+    }
+    // update previous state to that of current board
+    memcpy(game.previousState, game.currentBoardState, 8 * 8 * sizeof(game.previousState[0][0]));
+    memset(game.currentMove->allPieceLights, 0, 64);
+    memset(game.currentMove->lightState, 0, 64);
     
     // TODO: MAKE REPORT TO BE SENT BACK HERE WITH CHAR BOARD POSITION!!!!!!!!!!!!!!!!!!!!
 

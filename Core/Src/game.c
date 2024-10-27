@@ -388,10 +388,6 @@ void updateMoveShit(struct GameState* game) {
                     // turn off lights for potential moves for piece
                     lightsOff();
 
-                    // update previous state to that of current board
-                    memcpy(game->previousState, game->currentBoardState, 8 * 8 * sizeof(game->previousState[0][0]));
-                    memset(game->currentMove->allPieceLights, 0, 64);
-                    memset(game->currentMove->lightState, 0, 64);
                     
                     return;
                 } else {

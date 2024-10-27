@@ -201,6 +201,7 @@ void EXTI2_IRQHandler(void)
   /* USER CODE END EXTI2_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_2);
   /* USER CODE BEGIN EXTI2_IRQn 1 */
+  // TODO: RESET GAME CORRECTLY DURING BLINK ERROR STATE SOMEHOW!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
   //if the game hasn't started and middle button pressed, change time control
   if(!game.gameStarted) {
     changeTimeControl(&game);
