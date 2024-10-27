@@ -208,6 +208,43 @@ bool checkCastling() {
     }
 }
 
+
+bool checkEnPassant() {
+    bool enteredOne = false;
+    if ((game.isWhiteMove && game.previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'P' && game.previousStateChar[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 'p' ) || (!game.isWhiteMove && game.previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'p' && game.previousStateChar[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 'P' )) {
+    
+    } else if ((game.previousStateChar[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 'K' && game.previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'R' ) || (game.previousStateChar[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 'k' && game.previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'r' )) {
+        // if first pickup is rook and second King, check for castling with desktop app!!!!!!!!!!!!!
+        waitForCastlingResponse = true;
+        lightReport.reportId = 3;
+        lightReport.report3.reset = clockModeReport.report2.secondPickupRow << 3 | clockModeReport.report2.secondPickupCol;
+        USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint32_t*)&lightReport, 2);
+        osSemaphoreAcquire(checkCastleSem, osWaitForever);
+        // USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS);
+        waitForCastlingResponse = false;
+        // if first piece picked up is a king, and to the left castling is possible and the rook is the one that was picked up, light up those squares 
+        if (game.currentMove->allPieceLights[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol - 2] == 1 && clockModeReport.firstPickupCol == 0) {
+            memset(game.currentMove->lightState, 0, 64);
+           game.currentMove->lightState[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol - 1] = 1;  
+           game.currentMove->lightState[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol - 2] = 1;  
+           enteredOne = true;
+        } 
+        if (game.currentMove->allPieceLights[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol + 2] == 1 && clockModeReport.firstPickupCol == 7)  {
+            memset(game.currentMove->lightState, 0, 64);
+           game.currentMove->lightState[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol + 1] = 1;  
+           game.currentMove->lightState[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol + 2] = 1;  
+           enteredOne = true;
+        } 
+    }     
+
+    // return true if castling is an option and the pieces picked up were 
+    if (enteredOne) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 void updateMoveShit(struct GameState* game) {
     for(int i = 0; i < 8; i++) {
         for(int j = 0; j < 8; j++) {

@@ -859,8 +859,10 @@ void blinkError(void *argument)
                 arrsSame = false;
                 blinkLightsArr[i][j] = 1;
               } else if (errorMessage.resetState == FIRST_PIECE_PICKUP && !(i == errorMessage.firstPickupRow && j == errorMessage.firstPickupCol)) {
+                if (!(game.currentMove->allPieceLights[i][j] == 1 && game.currentBoardState[i][j] == 1)) {
                 arrsSame = false;
                 blinkLightsArr[i][j] = 1;
+                }
               } else if (errorMessage.resetState == SECOND_PIECE_PICKUP && !(i == clockModeReport.firstPickupRow && j == clockModeReport.firstPickupCol) && !(i == clockModeReport.report2.secondPickupRow && j == clockModeReport.report2.secondPickupCol)) {
                 arrsSame = false;
                 blinkLightsArr[i][j] = 1;
