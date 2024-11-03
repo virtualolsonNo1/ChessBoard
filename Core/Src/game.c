@@ -17,6 +17,9 @@ extern struct GameState game;
 extern osMutexId_t checkCastleSem;
 extern struct ErrorMessage errorMessage;
 extern bool isErrorState;
+bool isEnPassant = false;
+bool moveIsCastling = false;
+extern bool desktopError;
 HIDClockModeReports lightReport;
 
 bool waitForCastlingResponse;
@@ -202,6 +205,7 @@ bool checkCastling() {
 
     // return true if castling is an option and the pieces picked up were 
     if (enteredOne) {
+        moveIsCastling = true;
         return true;
     } else {
         return false;
@@ -209,41 +213,6 @@ bool checkCastling() {
 }
 
 
-bool checkEnPassant() {
-    bool enteredOne = false;
-    if ((game.isWhiteMove && game.previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'P' && game.previousStateChar[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 'p' ) || (!game.isWhiteMove && game.previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'p' && game.previousStateChar[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 'P' )) {
-    
-    } else if ((game.previousStateChar[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 'K' && game.previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'R' ) || (game.previousStateChar[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 'k' && game.previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'r' )) {
-        // if first pickup is rook and second King, check for castling with desktop app!!!!!!!!!!!!!
-        waitForCastlingResponse = true;
-        lightReport.reportId = 3;
-        lightReport.report3.reset = clockModeReport.report2.secondPickupRow << 3 | clockModeReport.report2.secondPickupCol;
-        USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint32_t*)&lightReport, 2);
-        osSemaphoreAcquire(checkCastleSem, osWaitForever);
-        // USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS);
-        waitForCastlingResponse = false;
-        // if first piece picked up is a king, and to the left castling is possible and the rook is the one that was picked up, light up those squares 
-        if (game.currentMove->allPieceLights[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol - 2] == 1 && clockModeReport.firstPickupCol == 0) {
-            memset(game.currentMove->lightState, 0, 64);
-           game.currentMove->lightState[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol - 1] = 1;  
-           game.currentMove->lightState[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol - 2] = 1;  
-           enteredOne = true;
-        } 
-        if (game.currentMove->allPieceLights[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol + 2] == 1 && clockModeReport.firstPickupCol == 7)  {
-            memset(game.currentMove->lightState, 0, 64);
-           game.currentMove->lightState[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol + 1] = 1;  
-           game.currentMove->lightState[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol + 2] = 1;  
-           enteredOne = true;
-        } 
-    }     
-
-    // return true if castling is an option and the pieces picked up were 
-    if (enteredOne) {
-        return true;
-    } else {
-        return false;
-    }
-}
 
 void updateMoveShit(struct GameState* game) {
     for(int i = 0; i < 8; i++) {
@@ -282,18 +251,38 @@ void updateMoveShit(struct GameState* game) {
                     clockModeReport.report2.finalPickupCol = 8;
                     clockModeReport.report2.finalPickupRow = 8;
                     game->currentMove->pickupState = SECOND_PIECE_PICKUP;
-                    // if (game->currentMove->lightsOn && !game->currentMove->firstPiecePlayersColor && game->currentBoardState[i][j] == 0 && game->currentMove->allPieceLights[i][j] == 1 && game->previousState[i][j] == 1) {
-                    // TODO: CASTLING AND EN PASSANT DON"T MEET THESE REQUIREMENTS SO NEED EXTRA CASE!!!!!!!!!!!!
+                    
+                    // if piece picked up is valid move as determined by the lights, handle accordingly
                     if (game->currentMove->lightsOn && game->currentMove->allPieceLights[i][j] == 1) {
                         memset(game->currentMove->lightState, 0, 64);
                         game->currentMove->lightState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] = 1;
                         game->currentMove->lightState[i][j] = 1;
+                        
+                        // TODO: CHECK FOR EN PASSANT. If en passant, light up final square for piece taking to land on
+                        if ((game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'P' && game->previousStateChar[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 'p' && clockModeReport.firstPickupRow == clockModeReport.report2.secondPickupRow) || (game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'p' && game->previousStateChar[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 'P' && clockModeReport.firstPickupRow == clockModeReport.report2.secondPickupRow)) {
+                            isEnPassant = true;
+                            if (game->isWhiteMove) {
+                                if (isupper(game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol])) {
+                                    game->currentMove->lightState[clockModeReport.report2.secondPickupRow - 1][clockModeReport.report2.secondPickupCol] = 1;
+                                } else {
+                                    game->currentMove->lightState[clockModeReport.firstPickupRow - 1][clockModeReport.firstPickupCol] = 1;
+                                }
+                            } else {
+                                if (islower(game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol])) {
+                                    game->currentMove->lightState[clockModeReport.report2.secondPickupRow + 1][clockModeReport.report2.secondPickupCol] = 1;
+                                } else {
+                                    game->currentMove->lightState[clockModeReport.firstPickupRow + 1][clockModeReport.firstPickupCol] = 1;
+                                }
+                            }
+                        }
+
                         game->currentMove->lightsOn = true;
                         updateLights();
                     } else {
                         // not potential final spot for piece, but could be en passant or castling
                         // TODO: CHECK FOR EN PESSANT and if third+ piece picked up
                         if (checkCastling()) {
+                            moveIsCastling = true;
                             game->currentMove->lightsOn = true;
                             updateLights();
 
@@ -337,19 +326,17 @@ void updateMoveShit(struct GameState* game) {
 
             // if move is over by button press or timer
             } else if (!game->currentMove->isFinalState && game->currentMove->pickupState == SECOND_PIECE_PICKUP) {
-                // TODO: ADD CHECK IF ANOTHER PIECE IS PICKED UP ERROR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                // TODO: replace with memcmp
-                // for(int a = 0; a < 8; a++) {
-                //     for(int b = 0; b < 8; b++) {
-                //         if (game->previousState[a][b] != game->currentBoardState[a][b]) {
-                //             return;
-                //         }
-                //     }
-                // }
-                if (memcmp(game->previousState, game->currentBoardState, 64) == 0) {
 
+                // if previous state is equal to current board state, go back to no piece pickup state
+                if (memcmp(game->previousState, game->currentBoardState, 64) == 0) {
+                    isEnPassant = false;
+                    moveIsCastling = false;
+
+                    // WHY KEEP ENTERING HERE AFTER BUTTON PRESS!!!!!!!
                     game->currentMove->pickupState = NO_PIECE_PICKUP;
                     lightsOff();
+                    
+                // if a third piece is picked up that was previously down, go to error state till it's put down
                 } else if (!(i == clockModeReport.firstPickupRow && j == clockModeReport.firstPickupCol) && !(i == clockModeReport.report2.secondPickupRow && j == clockModeReport.report2.secondPickupCol) && game->previousState[i][j] == 1 && game->currentBoardState[i][j] == 0) {
                     isErrorState = true;
                     errorMessage.numPieces = 2;
@@ -359,6 +346,7 @@ void updateMoveShit(struct GameState* game) {
                 //TODO: CHECK THAT WHERE PIECE IS SET DOWN IS VALID?????????????????????????????????????????!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! EXTRA CHECK NEEDED IF FIRST PICKUP WAS OPPONENT'S PIECE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 
             } else if(game->currentMove->isFinalState) {
+                // TODO ASAP!!!!!!!!!!!!!!!!!!! MAKE SURE WHEN TAKE THEY GO TO THAT SQUARE OR EN PASSANT, OTHERWISE ILLEGAL MOVE!!!!!!!!!!!!!!!!!!!
                 bool enteredOne = false;
                 // if it was a take, check to make sure piece was moved there
                 if (game->currentMove->pickupState == SECOND_PIECE_PICKUP) {
@@ -366,29 +354,159 @@ void updateMoveShit(struct GameState* game) {
 
                     // TODO: ADD CHECK TO MAKE SURE BOTH SPOTS AREN'T 1, OR NOT NECESSARY???????????????????????????????????????????
                     // if spot where first or second piece was picked up is a 1, then that's the final spot the piece was moved and it's probably valid as long as error handling is added
-                    if (game->currentBoardState[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 1 || game->currentBoardState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 1) {
+                    if (!moveIsCastling && (game->currentBoardState[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 1 || game->currentBoardState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 1 || isEnPassant)) {
+                        if (isEnPassant) {
+                            bool entered = false;
+                            // isEnPassant = false;
+                            for(int a = 0; a < 8; a++) {
+                                for(int b = 0; b < 8; b++) {
+                                    // if there's a piece on a square where the lights are lit up, that's final spot for piece
+                                    if (game->currentMove->lightState[a][b] == 1 && game->currentBoardState[a][b] == 1) {
+                                        entered = true;   
+                                        clockModeReport.report2.finalPickupRow = a;
+                                        clockModeReport.report2.finalPickupCol = b;
+                                    }
+                                }
+                            }
+
+                            // if piece isn't on one of it's valid spots, go to error state
+                            if (!entered) {
+                                isErrorState = true;
+                                errorMessage.numPieces = 1;
+                                desktopError = true;
+                                errorMessage.resetState = NO_PIECE_PICKUP;
+                                return;
+                            }
+                        }
+
+                        // if the piece is put back on it's starting square instead of new square (i.e. the piece where it landed matches who's move it is), error handle
+                        if (game->currentBoardState[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 1 && ((game->isWhiteMove && isupper(game->previousStateChar[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol])) || (!game->isWhiteMove && islower(game->previousStateChar[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol])))) {
+                            // TODO: WHY ENTERING HERE????????????????????!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                            isErrorState = true;
+                            errorMessage.numPieces = 1;
+                            desktopError = true;
+                            errorMessage.resetState = NO_PIECE_PICKUP;
+                            return;
+
+                        } else if (game->currentBoardState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 1 && ((game->isWhiteMove && isupper(game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol])) || (!game->isWhiteMove && islower(game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol])))) {
+                            isErrorState = true;
+                            errorMessage.numPieces = 1;
+                            desktopError = true;
+                            errorMessage.resetState = NO_PIECE_PICKUP;
+                            return;
+
+                        }
+
                         enteredOne = true;
                         
-                    } else if (game->previousState[i][j] == 0 && game->currentBoardState[i][j] == 1) {
+                        // TODO: WAS PREVIOUSLY LIGHT STATE!!!!!!!!!!!!!!!!!!!!!
+                    } else if (!moveIsCastling && (game->previousState[i][j] == 0 && game->currentBoardState[i][j] == 1 && game->currentMove->lightState[i][j] != 1)) {
+                        isErrorState = true;
+                        errorMessage.numPieces = 1;
+                        desktopError = true;
+                        errorMessage.resetState = NO_PIECE_PICKUP;
+                        return;
+                    } else if (moveIsCastling) {
+                        uint8_t numDifferences = 0;
+                        for(int i = 0; i < 8; i++) {
+                            for(int j = 0; j < 8; j++) {
+                                if (game->previousState[i][j] == 0 && game->currentBoardState[i][j] == 1 && game->currentMove->lightState[i][j] == 1) {
+                                    numDifferences++;
+                                }
+                            }
+                        }
+                        
+                        // if pieces are on the two lit up, valid squares, and  nothing else is different, should be chilling
+                        if (numDifferences == 2) {
+                            enteredOne = true;
+
+                        // if more than two differences, enter error state accordingly
+                        } else if (!isErrorState) {
+                        uint8_t errorStatus;
+                        memcpy(&errorStatus, hUsbDeviceFS.pClassData + 1, sizeof(1));
+                        isErrorState = true;
+                        errorMessage.numPieces = 1;
+                        desktopError = true;
+                        errorMessage.resetState = NO_PIECE_PICKUP;
+                        return;
+                        }
+
+                    // if it's not en passant or castling and nothing is on the first and second pickup squares, need to error out
+                    } else if (!isErrorState && !isEnPassant && !moveIsCastling && game->currentBoardState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 0 && game->currentBoardState[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 0) {
+                        uint8_t errorStatus;
+                        memcpy(&errorStatus, hUsbDeviceFS.pClassData + 1, sizeof(1));
+                        isErrorState = true;
+                        errorMessage.numPieces = 1;
+                        desktopError = true;
+                        errorMessage.resetState = NO_PIECE_PICKUP;
+                        return;
+
+
+                    }
+                    
+                    
+                    /* else if (game->previousState[i][j] == 0 && game->currentBoardState[i][j] == 1) {
                         clockModeReport.report2.finalPickupRow = i;
                         clockModeReport.report2.finalPickupCol = j;
                         enteredOne = true;
                                                
-                    }
+                    } */
                 
                 // as opposed to a take, if piece is moved, update report accordingly once final square is found
                 } else {
-                    if (game->previousState[i][j] == 0 && game->currentBoardState[i][j] == 1) {
-                            clockModeReport.report1.finalPickupRow = i;
-                            clockModeReport.report1.finalPickupCol = j;
+                    bool onNewSquare = false;
+                    for(int a = 0; a < 8; a++) {
+                        for(int b = 0; b < 8; b++) {
+                    if (game->previousState[a][b] == 0 && game->currentBoardState[a][b] == 1) {
+                        onNewSquare = true;
+                            // if king is moved two spots from current one, that shit aint legal 
+                            if ((game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'K' || game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'k') && clockModeReport.firstPickupCol == 4 && (game->currentMove->allPieceLights[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol + 2] == 1 || game->currentMove->allPieceLights[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol - 2] == 1)) {
+                                isErrorState = true;
+                                errorMessage.numPieces = 1;
+                                desktopError = true;
+                                errorMessage.resetState = NO_PIECE_PICKUP;
+                                return;
+                            }
+                            clockModeReport.report1.finalPickupRow = a;
+                            clockModeReport.report1.finalPickupCol = b;
                             enteredOne = true;
                     }
-                }                     
+                        }
+                    }
+                    if (!onNewSquare) {
+                        isErrorState = true;
+                        errorMessage.numPieces = 1;
+                        desktopError = true;
+                        errorMessage.resetState = NO_PIECE_PICKUP;
+                        return;
+                        
+                    }
+                }                      
                 if (enteredOne) {
-                    // turn off lights for potential moves for piece
-                    lightsOff();
+                    int numDifferences = 0;
+                    for (int a = 0; a < 8; a++) {
+                        for(int b = 0; b < 8; b++) {
+                            if (game->currentBoardState[a][b] != game->previousState[a][b]) {
+                                numDifferences++;
+                            }
+                        }
+                    }
 
-                    
+                    // make sure num differences matches up with the amount it should be given kind of move played, otherwise error out
+                    if (!((numDifferences == 3 && isEnPassant) || (numDifferences == 4 && moveIsCastling) || (game->currentMove->pickupState == FIRST_PIECE_PICKUP && numDifferences == 2) || (game->currentMove->pickupState == SECOND_PIECE_PICKUP && numDifferences == 1))) {
+                        isErrorState = true;
+                        errorMessage.numPieces = 1;
+                        desktopError = true;
+                        errorMessage.resetState = NO_PIECE_PICKUP;
+                        return;
+                        
+                    }
+
+                    // turn off lights for potential moves for piece
+                    // isEnPassant = false;
+                    // moveIsCastling = false;
+                    // lightsOff();
+
                     return;
                 } else {
                     // TODO: CHANGE THIS TO CHECK FOR IF IT DOESN"T ENTER SECOND PIECE PICKUP OR FIRST PIECE FINAL SPOT NOT FOUND, as now it'll just enter here whenever we're not on the final square

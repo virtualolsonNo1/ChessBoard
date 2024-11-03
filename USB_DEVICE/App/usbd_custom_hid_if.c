@@ -37,6 +37,7 @@ extern osMessageQueueId_t errorQueueHandle;
 extern struct ErrorMessage errorMessage;
 extern bool waitForCastlingResponse;
 bool isErrorState = false;
+bool desktopError = false;
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -278,6 +279,11 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
   
   // if the report ID is 4, copy the data into the receiveData buffer
   if (event_idx == 4 || event_idx == 5) {
+    // TEST!!!
+    volatile uint8_t test[65] = {0};
+    memcpy(test, hUsbDeviceFS.pClassData, 65);
+    
+    
     prevID = event_idx;
     prevArr = true;
     memcpy(receivedData, hUsbDeviceFS.pClassData + 1, sizeof(receivedData) - 1);
@@ -291,11 +297,17 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
       
   // if error received from desktop app, replay the move as button hit too early or for wrong move DESPITE ALL THAT ERROR HANDLING cause people are dumb ig
   } else if (event_idx == 6) {
+    // CARLTODO: HOW TO FIX THIS CASTLING BUG???????????????????!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // if (waitForCastlingResponse) {
+    //   osSemaphoreRelease(checkCastleSem);
+    //   return;
+    // }
     uint8_t errorStatus;
     memcpy(&errorStatus, hUsbDeviceFS.pClassData + 1, sizeof(1));
     isErrorState = true;
     errorMessage.numPieces = 1;
     errorMessage.resetState = NO_PIECE_PICKUP;
+    desktopError = true;
     osSemaphoreRelease(checkDesktopAppErrSem);
     return;
 
@@ -303,11 +315,14 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
     prevID = 255;
     prevArr = false;
     memcpy(&game.previousStateChar[7][7], hUsbDeviceFS.pClassData, 1);
+    memset(hUsbDeviceFS.pClassData, 0, 64);
   } else if (prevArr && prevID == 4) {
     prevID = 255;
     prevArr = false;
     memcpy(&game.currentMove->lightState[7][7], hUsbDeviceFS.pClassData, 1);
     memcpy(game.currentMove->allPieceLights, game.currentMove->lightState, 64);
+    // memset(hUsbDeviceFS.pClassData, 0, 64);
+    memset(receivedData, 0, 64);
     volatile int x = 1;
     game.currentMove->receivedLightData = true;
     
@@ -323,12 +338,16 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
     if (!possibleMove) {
       // set isErrorState to true so update move thread can suspend itself later and start blink error task
       isErrorState = true;
-      if (game.currentMove->pickupState == FIRST_PIECE_PICKUP) {
+      // if (game.currentMove->pickupState == FIRST_PIECE_PICKUP) {
         errorMessage.numPieces = 1;
         errorMessage.resetState = NO_PIECE_PICKUP;
         errorMessage.firstPickupRow = clockModeReport.firstPickupRow;
         errorMessage.firstPickupCol = clockModeReport.firstPickupCol;
-      }
+        if (waitForCastlingResponse) {
+          osSemaphoreRelease(checkCastleSem);
+          return;
+        }
+      // }
     } else {
       if (waitForCastlingResponse) {
         osSemaphoreRelease(checkCastleSem);

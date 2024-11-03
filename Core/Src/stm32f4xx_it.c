@@ -171,23 +171,26 @@ void EXTI1_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI1_IRQn 0 */
   //stop clock after button pressed
-    HAL_TIM_Base_Stop(&htim5);
   /* USER CODE END EXTI1_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_1);
   /* USER CODE BEGIN EXTI1_IRQn 1 */
     //since chess clock button pressed, change active player and start their clock
     if(game.activePlayer == game.player2 || !game.gameStarted) {
-      game.activePlayer = game.player1;
       if(!game.gameStarted) {
+        game.activePlayer = game.player1;
         // ASSUMED NORMAL ORIENTATION
         game.isWhiteMove = true;
         game.gameStarted = true;
-       } else {
+        HAL_TIM_Base_Stop(&htim5);
+        HAL_TIM_Base_Start(&htim2);
+       } else if (game.gameStarted && !game.currentMove->pickupState == NO_PIECE_PICKUP && !game.currentMove->isFinalState) {
+        // game.activePlayer = game.player1;
         game.currentMove->isFinalState = true;
-        game.isWhiteMove = !game.isWhiteMove;
+        // game.isWhiteMove = true;
+        // HAL_TIM_Base_Stop(&htim5);
+        // HAL_TIM_Base_Start(&htim2);
       }
     }
-    HAL_TIM_Base_Start(&htim2);
   /* USER CODE END EXTI1_IRQn 1 */
 }
 
@@ -225,24 +228,29 @@ void EXTI3_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI3_IRQn 0 */
   //stop clock after button pressed
-    HAL_TIM_Base_Stop(&htim2);
   /* USER CODE END EXTI3_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_3);
   /* USER CODE BEGIN EXTI3_IRQn 1 */
     if(game.activePlayer == game.player1 || !game.gameStarted) {
       //since chess clock button pressed, change active player and start their clock
-      game.activePlayer = game.player2;
       if(!game.gameStarted) {
+        game.activePlayer = game.player2;
         //TODO: BACKWARDS BOARD, update later!!!!!!!
         game.isWhiteMove = true;
         game.gameStarted = true;
         memcpy(&game.previousState, &game.currentBoardState, 8 * 8 * sizeof(game.previousState[0][0]));
-      } else {
+        HAL_TIM_Base_Stop(&htim2);
+        HAL_TIM_Base_Start(&htim5);
+        return;
+      } else if (game.gameStarted && !game.currentMove->pickupState == NO_PIECE_PICKUP && !game.currentMove->isFinalState) {
+        // game.activePlayer = game.player2;
         game.currentMove->isFinalState = true;
-        game.isWhiteMove = !game.isWhiteMove;
+        // game.isWhiteMove = false;
+        // HAL_TIM_Base_Stop(&htim2);
+        // HAL_TIM_Base_Start(&htim5);
+        return;
       }
     }
-    HAL_TIM_Base_Start(&htim5);
 
   /* USER CODE END EXTI3_IRQn 1 */
 }

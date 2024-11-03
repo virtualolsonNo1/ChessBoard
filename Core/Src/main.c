@@ -57,6 +57,8 @@ SPI_HandleTypeDef hspi2;
 
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim5;
+extern bool isEnPassant;
+extern bool moveIsCastling;
 
 /* Definitions for blinkErrorTask */
 osThreadId_t blinkErrorTaskHandle;
@@ -97,6 +99,7 @@ struct ErrorMessage errorMessage;
 extern USBD_HandleTypeDef hUsbDeviceFS;
 extern uint8_t lightsOffArr[8][8];
 extern bool isErrorState;
+extern bool desktopError;
 
 /* USER CODE END PV */
 
@@ -867,6 +870,7 @@ void blinkError(void *argument)
                 blinkLightsArr[i][j] = 1;
                 }
               } else if (errorMessage.resetState == SECOND_PIECE_PICKUP && !(i == clockModeReport.firstPickupRow && j == clockModeReport.firstPickupCol) && !(i == clockModeReport.report2.secondPickupRow && j == clockModeReport.report2.secondPickupCol)) {
+                // TODO: SHOULD TWO LIGHTS FROM PICKUP BLINK OR INDICATE ANYTHING OR AT LEAST LIGHT UP WHEN 
                 arrsSame = false;
                 blinkLightsArr[i][j] = 1;
               }
@@ -875,12 +879,17 @@ void blinkError(void *argument)
         }
 
         if (arrsSame) {
-          osThreadResume(updateMoveTaskHandle);
+          // TODO: DO WE WANT THIS???????????????!!!!!!!!!!!!!!!!!!!!!
+          isEnPassant = false;
+          moveIsCastling = false;
           game.currentMove->lightsOn = false;
           isErrorState = false;
           inErrorState = false;
           lightsOff();
-          if (errorMessage.resetState == NO_PIECE_PICKUP || errorMessage.resetState == FIRST_PIECE_PICKUP) {
+          osThreadResume(updateMoveTaskHandle);
+          if (errorMessage.resetState == NO_PIECE_PICKUP || errorMessage.resetState == FIRST_PIECE_PICKUP || isEnPassant || moveIsCastling) {
+            isEnPassant = false;
+            moveIsCastling = false;
             game.currentMove->pickupState = NO_PIECE_PICKUP;
           } else if (errorMessage.resetState == SECOND_PIECE_PICKUP) {
             game.currentMove->pickupState = errorMessage.resetState;
@@ -943,7 +952,7 @@ void updateMove(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    if (isErrorState) {
+    if (isErrorState && !game.currentMove->isFinalState) {
       // notify error queue with proper error message and suspend current task
       osMessageQueuePut(errorQueueHandle, &errorMessage, NULL, osWaitForever);
       osThreadSuspend(updateMoveTaskHandle);
@@ -977,7 +986,9 @@ void updateMove(void *argument)
 
     if (game.gameStarted) {
       //calculate if move occurred and capture data related to said move
-      updateMoveShit(&game);
+      if (!game.currentMove->isFinalState) {
+        updateMoveShit(&game);
+      }
     } else {
       // light up squares where pieces aren't but should be before start of game
       checkStartingSquares();
@@ -986,44 +997,57 @@ void updateMove(void *argument)
     //if current move is finished, transmit said data to teh desktop app
     if(game.currentMove->isFinalState && game.gameStarted) {
       updateMoveShit(&game);
-      
-      if (game.currentMove->pickupState == SECOND_PIECE_PICKUP) {
-        
-        clockModeReport.reportId = 2;
-        USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 7);
-        USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS);
-        
-        // wait for response from desktop app if there was an error or not
-        osSemaphoreAcquire(checkDesktopAppErrSem, osWaitForever);
-        // TODO: MAKE SURE THAT THE char state of board always looks right when playing
-      } else {
-        clockModeReport.reportId = 1;
+      if (!isErrorState) {
+        if (game.currentMove->pickupState == SECOND_PIECE_PICKUP) {
+          
+          clockModeReport.reportId = 2;
+          USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 7);
+          USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS);
+          
+          // wait for response from desktop app if there was an error or not
+          osDelay(5);
+          osSemaphoreAcquire(checkDesktopAppErrSem, osWaitForever);
+          // TODO: MAKE SURE THAT THE char state of board always looks right when playing
+        } else {
+          clockModeReport.reportId = 1;
 
-        USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 5);
-        USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS);
-        // wait for response from desktop app if there was an error or not
-        osSemaphoreAcquire(checkDesktopAppErrSem, osWaitForever);
+          USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 5);
+          USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS);
+          // wait for response from desktop app if there was an error or not
+          osDelay(5);
+          osSemaphoreAcquire(checkDesktopAppErrSem, osWaitForever);
+        }
       }
       
 
+      // TODO: MOVE TO BETTER SPOT SO NEVER HAVE TIME ISSUES AFTER HITTING BUTTON!!!!!!!!!!!!!!!!!!!!! IN HORRIBLE SPOT HERE!!!!!!!!!!!!!!!!!!!!!!!
     // if move sent to desktop app is wrong because they play it in the wrong spot and hit button, etc
     if (isErrorState) {
+      if (desktopError) {
+      desktopError = false;
       // check which player's turn it is now and reset it to previous player and turn on the appropriate clock
-      if (game.activePlayer == game.player2) {
-        game.activePlayer = game.player1;
-        HAL_TIM_Base_Stop(&htim5);
-        HAL_TIM_Base_Start(&htim2);
-      } else {
-        game.activePlayer = game.player2;
-        HAL_TIM_Base_Stop(&htim2);
-        HAL_TIM_Base_Start(&htim5);
-      }
-      game.isWhiteMove = !game.isWhiteMove;
+      // if (game.activePlayer == game.player2) {
+      //   game.activePlayer = game.player1;
+      //   game.isWhiteMove = true;
+      //   HAL_TIM_Base_Stop(&htim5);
+      //   HAL_TIM_Base_Start(&htim2);
+      // } else {
+      //   game.activePlayer = game.player2;
+      //   game.isWhiteMove = false;
+      //   HAL_TIM_Base_Stop(&htim2);
+      //   HAL_TIM_Base_Start(&htim5);
+      // }
+      // game.isWhiteMove = !game.isWhiteMove;
       game.currentMove->isFinalState = false;
+      }
       
       // notify error queue with proper error message and suspend current task
-      osMessageQueuePut(errorQueueHandle, &errorMessage, NULL, osWaitForever);
+      osMessageQueuePut(errorQueueHandle, (const void *)&errorMessage, NULL, osWaitForever);
       osThreadSuspend(updateMoveTaskHandle);
+      osDelay(1);
+      isErrorState = false;
+      game.currentMove->isFinalState = false;
+      continue;
       
     }
     // update previous state to that of current board
@@ -1033,6 +1057,17 @@ void updateMove(void *argument)
     
     // TODO: MAKE REPORT TO BE SENT BACK HERE WITH CHAR BOARD POSITION!!!!!!!!!!!!!!!!!!!!
 
+    if (!game.isWhiteMove) {
+      game.activePlayer = game.player1;
+      game.isWhiteMove = true;
+      HAL_TIM_Base_Stop(&htim5);
+      HAL_TIM_Base_Start(&htim2);
+    } else {
+        game.activePlayer = game.player2;
+        game.isWhiteMove = false;
+        HAL_TIM_Base_Stop(&htim2);
+        HAL_TIM_Base_Start(&htim5);
+    }
     
       if (clockModeReport.reportId == 2) {
         clockModeReport.report2.finalPickupRow = 8;
@@ -1047,6 +1082,11 @@ void updateMove(void *argument)
       game.currentMove->lightsOn = false;
       game.currentMove->pieceNewSquare = false;
       game.currentMove->receivedLightData = false;
+      isEnPassant = false;
+      moveIsCastling = false;
+      // memset(game.currentMove->allPieceLights, 0, 64);
+      // memset(game.currentMove->lightState, 0, 64);
+      lightsOff();
 
     // osDelay(100);
 
