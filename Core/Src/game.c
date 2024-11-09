@@ -258,20 +258,24 @@ void updateMoveShit(struct GameState* game) {
                         game->currentMove->lightState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] = 1;
                         game->currentMove->lightState[i][j] = 1;
                         
-                        // TODO: CHECK FOR EN PASSANT. If en passant, light up final square for piece taking to land on
+                        // If en passant, light up final square for piece taking to land on as well as initial square for that piece
                         if ((game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'P' && game->previousStateChar[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 'p' && clockModeReport.firstPickupRow == clockModeReport.report2.secondPickupRow) || (game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'p' && game->previousStateChar[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 'P' && clockModeReport.firstPickupRow == clockModeReport.report2.secondPickupRow)) {
                             isEnPassant = true;
                             if (game->isWhiteMove) {
                                 if (isupper(game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol])) {
                                     game->currentMove->lightState[clockModeReport.report2.secondPickupRow - 1][clockModeReport.report2.secondPickupCol] = 1;
+                                    game->currentMove->lightState[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] = 0;
                                 } else {
                                     game->currentMove->lightState[clockModeReport.firstPickupRow - 1][clockModeReport.firstPickupCol] = 1;
+                                    game->currentMove->lightState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] = 0;
                                 }
                             } else {
                                 if (islower(game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol])) {
                                     game->currentMove->lightState[clockModeReport.report2.secondPickupRow + 1][clockModeReport.report2.secondPickupCol] = 1;
+                                    game->currentMove->lightState[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] = 0;
                                 } else {
                                     game->currentMove->lightState[clockModeReport.firstPickupRow + 1][clockModeReport.firstPickupCol] = 1;
+                                    game->currentMove->lightState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] = 0;
                                 }
                             }
                         }
@@ -457,7 +461,8 @@ void updateMoveShit(struct GameState* game) {
                     bool onNewSquare = false;
                     for(int a = 0; a < 8; a++) {
                         for(int b = 0; b < 8; b++) {
-                    if (game->previousState[a][b] == 0 && game->currentBoardState[a][b] == 1) {
+                    // if piece is on new square and that square is lit up, probably valid spot besides one king edge case
+                    if (game->previousState[a][b] == 0 && game->currentBoardState[a][b] == 1 && game->currentMove->lightState[a][b] == 1) {
                         onNewSquare = true;
                             // if king is moved two spots from current one, that shit aint legal 
                             if ((game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'K' || game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'k') && clockModeReport.firstPickupCol == 4 && (game->currentMove->allPieceLights[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol + 2] == 1 || game->currentMove->allPieceLights[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol - 2] == 1)) {

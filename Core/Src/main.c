@@ -880,8 +880,8 @@ void blinkError(void *argument)
 
         if (arrsSame) {
           // TODO: DO WE WANT THIS???????????????!!!!!!!!!!!!!!!!!!!!!
-          isEnPassant = false;
-          moveIsCastling = false;
+          // isEnPassant = false;
+          // moveIsCastling = false;
           game.currentMove->lightsOn = false;
           isErrorState = false;
           inErrorState = false;
