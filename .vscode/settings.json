@@ -6,7 +6,8 @@
     "stm32f4xx_hal.h": "c",
     "string.h": "c",
     "max7219.h": "c",
-    "usbd_hid.h": "c"
+    "usbd_hid.h": "c",
+    "stm32f4xx_hal_tim.h": "c"
   },
   "cpp.path": "c:\\MinGW\\bin",
   "C_Cpp_Runner.msvcBatchPath": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Auxiliary/Build/vcvarsall.bat",

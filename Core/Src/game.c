@@ -34,6 +34,22 @@ void initTime(struct GameState* game) {
     max7219_PrintNtos(PLAYER2_SECONDS, game->player2->clock.seconds, 2);
 }
 
+void displayNoClock() {
+    max7219_Decode_Off();
+    // send blank for that digit
+    max7219_SendData(DIGIT_1, 0x00);
+    max7219_SendData(DIGIT_2, 0x00);
+    max7219_SendData(DIGIT_3, 0x00);
+    max7219_SendData(DIGIT_4, 0x00);
+    max7219_SendData(DIGIT_5, 0x0E);
+    max7219_SendData(DIGIT_7, 0x7E);
+    
+    max7219_SendData(DIGIT_8, 0x76);
+    max7219_SendData(DIGIT_6, 0x4E);
+    // TODO: CAN THIS JUST BE HERE??????!!!!!!!
+    // max7219_Decode_On();
+}
+
 void changeTimeControl(struct GameState* game) {
     //change current time control to next one in list of possible time controls
     switch(game->timeControl) {
@@ -80,6 +96,9 @@ void changeTimeControl(struct GameState* game) {
             game->player2->clock.seconds = 0;
             break;
         case HOUR_LIMIT:
+            game->timeControl = NO_CLOCK;
+            break;
+        case NO_CLOCK:
             game->timeControl = ONE_MINUTE_LIMIT;
             game->player1->clock.minutes = 1;
             game->player1->clock.seconds = 0;
@@ -93,7 +112,13 @@ void changeTimeControl(struct GameState* game) {
     __HAL_TIM_SET_AUTORELOAD(game->player2->clock.timer, game->timeControl);
     HAL_TIM_Base_Init(game->player1->clock.timer);
     HAL_TIM_Base_Init(game->player2->clock.timer);
-    initTime(game);
+    if (game->timeControl == NO_CLOCK) {
+        displayNoClock();
+    } else {
+        // TODO: CAN WE LEAVE THIS HERE AND KEEP IN OTHER SPOT????!!!!
+        max7219_Decode_On();
+        initTime(game);
+    }
     return;
 }
 

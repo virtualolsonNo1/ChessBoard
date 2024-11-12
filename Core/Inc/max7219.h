@@ -56,13 +56,14 @@ typedef enum {
 	LETTER_H	= 0x0C,
 	LETTER_L	= 0x0D,
 	LETTER_P	= 0x0E,
-	BLANK		= 0x0F
+	BLANK		= 0x0F,
 }MAX7219_Numeric;
 
 void max7219_Init(uint8_t intensivity);
 void max7219_SetIntensivity(uint8_t intensivity);
 void max7219_Clean(void);
 void max7219_SendData(uint8_t addr, uint8_t data);
+void max7219_SendData2(uint8_t addr, uint8_t data);
 void max7219_Turn_On(void);
 void max7219_Turn_Off(void);
 void max7219_Decode_On(void);

@@ -208,7 +208,7 @@ void EXTI2_IRQHandler(void)
   //if the game hasn't started and middle button pressed, change time control
   if(!game.gameStarted) {
     changeTimeControl(&game);
-
+    
     //otherwise, this signals the game being over, so stop the timers and reset the game
   } else {
     HAL_TIM_Base_Stop(&htim2);

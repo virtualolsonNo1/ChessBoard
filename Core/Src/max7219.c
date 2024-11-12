@@ -15,22 +15,24 @@
 static uint8_t decodeMode = 0x00;
 
 static uint8_t SYMBOLS[] = {
-		0x7E,	// numeric 0
-		0x30,	// numeric 1
-		0x6D,	// numeric 2
-		0x79,	// numeric 3
-		0x33,	// numeric 4
-		0x5B,	// numeric 5
-		0x5F,	// numeric 6
-		0x70,	// numeric 7
-		0x7F,	// numeric 8
-		0x7B,	// numeric 9
-		0x01,	// minus
-		0x4F,	// letter E
-		0x37,	// letter H
-		0x0E,	// letter L
-		0x67,	// letter P
-		0x00	// blank
+    0x7E,   // numeric 0
+    0x30,   // numeric 1
+    0x6D,   // numeric 2
+    0x79,   // numeric 3
+    0x33,   // numeric 4
+    0x5B,   // numeric 5
+    0x5F,   // numeric 6
+    0x70,   // numeric 7
+    0x7F,   // numeric 8
+    0x7B,   // numeric 9
+    0x01,   // minus
+    0x4F,   // letter E
+    0x37,   // letter H
+    0x0E,   // letter L
+    0x67,   // letter P
+    0x00,   // blank
+    0x72,   // letter C (segments A,D,E,F)
+    0x4E    // letter N (segments A,B,C,E,F = 0b01110110)
 };
 
 static uint16_t getSymbol(uint8_t number);

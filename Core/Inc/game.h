@@ -23,6 +23,7 @@ typedef enum {
     TEN_MINUTE_LIMIT = 600000,
     THIRTY_MINUTE_LIMIT = 1800000,
     HOUR_LIMIT = 3600000,
+    NO_CLOCK,
 } AllowedTimes;
 
 struct Clock {
