@@ -25,6 +25,8 @@ HIDClockModeReports lightReport;
 bool waitForCastlingResponse;
 
 uint8_t lightsOffArr[8][8] = {0};
+extern TIM_HandleTypeDef htim3;
+bool startedPieceCheck = false;
 
 void initTime(struct GameState* game) {
     //initialize the display with the starting time for both players
@@ -330,6 +332,7 @@ void updateMoveShit(struct GameState* game) {
 
                 // if first piece picked up is put back on starting square, turn off lights and reset pickup state accordingly
                 } else if (game->currentBoardState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 1) {
+                    startedPieceCheck = false;
                     game->currentMove->pickupState = NO_PIECE_PICKUP;
                     game->currentMove->receivedLightData = false;
                     game->currentMove->lightsOn = false;
@@ -338,6 +341,37 @@ void updateMoveShit(struct GameState* game) {
 
                 // if piece is moved over one of it's potential moves, only light up that square and it's original spot
                 } else if (game->currentMove->lightsOn && game->currentMove->firstPiecePlayersColor && game->currentBoardState[i][j] == 1 && game->currentMove->allPieceLights[i][j] == 1 && game->previousState[i][j] == 0) {
+                    // TODO: TEST WITH PRINTLN DEBUGGING AND OTHER SHIT!!!! ALSO, HANDLE KING MOVE TWO SQUARES FOR CASTLING
+                    if (!startedPieceCheck && game->timeControl == NO_CLOCK) {
+                        // HAL_TIM_Base_Start_IT(&htim3);
+                        // htim3.Instance->CR1 |= TIM_CR1_
+                        // HAL_TIM_Base_Init(&htim3);
+                    // Clear any pending interrupt flag
+                        NVIC_DisableIRQ(TIM3_IRQn);
+                        __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
+                        
+                        // Enable the update interrupt
+                        htim3.Instance->DIER |= TIM_DIER_UIE;
+                        
+                        __HAL_TIM_SET_COUNTER(&htim3, 10000);
+                        // Start the timer
+                        HAL_TIM_Base_Start(&htim3);
+                        NVIC_EnableIRQ(TIM3_IRQn);
+
+                        startedPieceCheck = true;
+                        volatile int x = 1;
+                    } else if (startedPieceCheck && game->timeControl == NO_CLOCK && game->currentBoardState[game->currentMove->pieceNewRow][game->currentMove->pieceNewCol] == 0) {
+                    // Stop the timer
+                        HAL_TIM_Base_Stop(&htim3);
+                        
+                        // Reset the counter value to 10000
+                        __HAL_TIM_SET_COUNTER(&htim3, 10000);
+                        
+                        // Clear any pending interrupt flag
+                        __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
+                        
+                        startedPieceCheck = false;
+                    }
                     game->currentMove->pieceNewSquare = true;
                     game->currentMove->pieceNewRow = i;
                     game->currentMove->pieceNewCol = j;

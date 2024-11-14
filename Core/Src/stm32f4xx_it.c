@@ -28,6 +28,8 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN TD */
+extern bool startedPieceCheck;
+extern bool isErrorState;
 
 /* USER CODE END TD */
 
@@ -59,6 +61,7 @@
 /* External variables --------------------------------------------------------*/
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 extern TIM_HandleTypeDef htim2;
+extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim5;
 extern TIM_HandleTypeDef htim1;
 
@@ -174,6 +177,7 @@ void EXTI1_IRQHandler(void)
   /* USER CODE END EXTI1_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_1);
   /* USER CODE BEGIN EXTI1_IRQn 1 */
+
     //since chess clock button pressed, change active player and start their clock
     if(game.activePlayer == game.player2 || !game.gameStarted) {
       if(!game.gameStarted) {
@@ -181,9 +185,12 @@ void EXTI1_IRQHandler(void)
         // ASSUMED NORMAL ORIENTATION
         game.isWhiteMove = true;
         game.gameStarted = true;
+        if (game.timeControl == NO_CLOCK) {
+          return;
+        }
         HAL_TIM_Base_Stop(&htim5);
         HAL_TIM_Base_Start(&htim2);
-       } else if (game.gameStarted && !game.currentMove->pickupState == NO_PIECE_PICKUP && !game.currentMove->isFinalState) {
+       } else if (!(game.timeControl == NO_CLOCK) && game.gameStarted && !game.currentMove->pickupState == NO_PIECE_PICKUP && !game.currentMove->isFinalState) {
         // game.activePlayer = game.player1;
         game.currentMove->isFinalState = true;
         // game.isWhiteMove = true;
@@ -239,10 +246,13 @@ void EXTI3_IRQHandler(void)
         game.isWhiteMove = true;
         game.gameStarted = true;
         memcpy(&game.previousState, &game.currentBoardState, 8 * 8 * sizeof(game.previousState[0][0]));
+        if (game.timeControl == NO_CLOCK) {
+          return;
+        }
         HAL_TIM_Base_Stop(&htim2);
         HAL_TIM_Base_Start(&htim5);
         return;
-      } else if (game.gameStarted && !game.currentMove->pickupState == NO_PIECE_PICKUP && !game.currentMove->isFinalState) {
+      } else if (!(game.timeControl == NO_CLOCK) && game.gameStarted && !game.currentMove->pickupState == NO_PIECE_PICKUP && !game.currentMove->isFinalState) {
         // game.activePlayer = game.player2;
         game.currentMove->isFinalState = true;
         // game.isWhiteMove = false;
@@ -288,6 +298,25 @@ void TIM2_IRQHandler(void)
   
 
   /* USER CODE END TIM2_IRQn 1 */
+}
+
+/**
+  * @brief This function handles TIM3 global interrupt.
+  */
+void TIM3_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM3_IRQn 0 */
+
+  /* USER CODE END TIM3_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim3);
+  /* USER CODE BEGIN TIM3_IRQn 1 */
+  HAL_TIM_Base_Stop(&htim3);
+  startedPieceCheck = false;
+  if (!isErrorState && game.previousState[game.currentMove->pieceNewRow][game.currentMove->pieceNewCol] == 0 && game.currentBoardState[game.currentMove->pieceNewRow][game.currentMove->pieceNewCol] == 1) {
+    game.currentMove->isFinalState = true;
+  }
+
+  /* USER CODE END TIM3_IRQn 1 */
 }
 
 /**

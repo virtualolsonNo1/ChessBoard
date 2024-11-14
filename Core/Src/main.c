@@ -1,3 +1,4 @@
+/* USER CODE BEGIN Header */
 /**
   ******************************************************************************
   * @file           : main.c
@@ -5,7 +6,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2023 STMicroelectronics.
+  * Copyright (c) 2024 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -56,6 +57,7 @@ SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;
 
 TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim5;
 extern bool isEnPassant;
 extern bool moveIsCastling;
@@ -100,6 +102,7 @@ extern USBD_HandleTypeDef hUsbDeviceFS;
 extern uint8_t lightsOffArr[8][8];
 extern bool isErrorState;
 extern bool desktopError;
+extern bool startedPieceCheck;
 
 /* USER CODE END PV */
 
@@ -110,6 +113,7 @@ static void MX_SPI1_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM5_Init(void);
+static void MX_TIM3_Init(void);
 void blinkError(void *argument);
 void updateTime(void *argument);
 void updateMove(void *argument);
@@ -213,7 +217,7 @@ int main(void)
   MX_SPI2_Init();
   MX_TIM2_Init();
   MX_TIM5_Init();
-  MX_USB_DEVICE_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
   //properly set up 7 segment LCD
   max7219_Init(0xA);
@@ -298,8 +302,6 @@ int main(void)
 
   /* Init scheduler */
   osKernelInitialize();
-  /* Create the mutex(es) */
-  /* creation of animateMutex */
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
@@ -685,6 +687,51 @@ static void MX_TIM2_Init(void)
 }
 
 /**
+  * @brief TIM3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM3_Init(void)
+{
+
+  /* USER CODE BEGIN TIM3_Init 0 */
+
+  /* USER CODE END TIM3_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM3_Init 1 */
+
+  /* USER CODE END TIM3_Init 1 */
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 16000;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_DOWN;
+  htim3.Init.Period = 10000;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM3_Init 2 */
+
+  /* USER CODE END TIM3_Init 2 */
+
+}
+
+/**
   * @brief TIM5 Initialization Function
   * @param None
   * @retval None
@@ -933,6 +980,10 @@ void updateTime(void *argument)
   /* Infinite loop */
   for(;;)
   {
+    if (game.timeControl == NO_CLOCK) {
+      osDelay(1);
+      continue;
+    }
     updateTimeOld();
     osDelay(1);
   }
@@ -1084,6 +1135,7 @@ void updateMove(void *argument)
       game.currentMove->receivedLightData = false;
       isEnPassant = false;
       moveIsCastling = false;
+      startedPieceCheck = false;
       // memset(game.currentMove->allPieceLights, 0, 64);
       // memset(game.currentMove->lightState, 0, 64);
       lightsOff();
