@@ -279,6 +279,20 @@ void updateMoveShit(struct GameState* game) {
                     clockModeReport.report2.finalPickupRow = 8;
                     game->currentMove->pickupState = SECOND_PIECE_PICKUP;
                     
+                    
+                    if (startedPieceCheck && game->timeControl == NO_CLOCK) {
+                        // Stop the timer
+                        HAL_TIM_Base_Stop(&htim3);
+                        
+                        // Reset the counter value to 10000
+                        __HAL_TIM_SET_COUNTER(&htim3, 1000);
+                        
+                        // Clear any pending interrupt flag
+                        __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
+                        
+                        startedPieceCheck = false;
+                    }
+                    
                     // if piece picked up is valid move as determined by the lights, handle accordingly
                     if (game->currentMove->lightsOn && game->currentMove->allPieceLights[i][j] == 1) {
                         memset(game->currentMove->lightState, 0, 64);
@@ -309,6 +323,8 @@ void updateMoveShit(struct GameState* game) {
 
                         game->currentMove->lightsOn = true;
                         updateLights();
+                        
+                        
                     } else {
                         // not potential final spot for piece, but could be en passant or castling
                         // TODO: CHECK FOR EN PESSANT and if third+ piece picked up
@@ -353,7 +369,7 @@ void updateMoveShit(struct GameState* game) {
                         // Enable the update interrupt
                         htim3.Instance->DIER |= TIM_DIER_UIE;
                         
-                        __HAL_TIM_SET_COUNTER(&htim3, 10000);
+                        __HAL_TIM_SET_COUNTER(&htim3, 1000);
                         // Start the timer
                         HAL_TIM_Base_Start(&htim3);
                         NVIC_EnableIRQ(TIM3_IRQn);
@@ -365,7 +381,7 @@ void updateMoveShit(struct GameState* game) {
                         HAL_TIM_Base_Stop(&htim3);
                         
                         // Reset the counter value to 10000
-                        __HAL_TIM_SET_COUNTER(&htim3, 10000);
+                        __HAL_TIM_SET_COUNTER(&htim3, 1000);
                         
                         // Clear any pending interrupt flag
                         __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
