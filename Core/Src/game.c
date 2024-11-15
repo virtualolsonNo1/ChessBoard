@@ -358,7 +358,7 @@ void updateMoveShit(struct GameState* game) {
                 // if piece is moved over one of it's potential moves, only light up that square and it's original spot
                 } else if (game->currentMove->lightsOn && game->currentMove->firstPiecePlayersColor && game->currentBoardState[i][j] == 1 && game->currentMove->allPieceLights[i][j] == 1 && game->previousState[i][j] == 0) {
                     // TODO: TEST WITH PRINTLN DEBUGGING AND OTHER SHIT!!!! ALSO, HANDLE KING MOVE TWO SQUARES FOR CASTLING
-                    if (!startedPieceCheck && game->timeControl == NO_CLOCK) {
+                    if (!startedPieceCheck && game->timeControl == NO_CLOCK && !((game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'K' || game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'k') && clockModeReport.firstPickupCol == 4 && (game->currentMove->allPieceLights[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol + 2] == 1 || game->currentMove->allPieceLights[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol - 2] == 1))) {
                         // HAL_TIM_Base_Start_IT(&htim3);
                         // htim3.Instance->CR1 |= TIM_CR1_
                         // HAL_TIM_Base_Init(&htim3);
@@ -420,9 +420,61 @@ void updateMoveShit(struct GameState* game) {
                     isErrorState = true;
                     errorMessage.numPieces = 2;
                     errorMessage.resetState = SECOND_PIECE_PICKUP;
+                    return;
                 } 
-                //TODO: MAKE IT SO EN PESSANT AND CASTLING WORK!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                //TODO: CHECK THAT WHERE PIECE IS SET DOWN IS VALID?????????????????????????????????????????!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! EXTRA CHECK NEEDED IF FIRST PICKUP WAS OPPONENT'S PIECE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                
+                
+                // if the piece is put back on it's starting square instead of new square (i.e. the piece where it landed matches who's move it is), error handle
+                if (!startedPieceCheck && game->timeControl == NO_CLOCK && game->currentBoardState[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 1 && ((!game->isWhiteMove && isupper(game->previousStateChar[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol])) || (game->isWhiteMove && islower(game->previousStateChar[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol])))) {
+                    game->currentMove->pieceNewSquare = true;
+                    game->currentMove->pieceNewRow = clockModeReport.report2.secondPickupRow;
+                    game->currentMove->pieceNewCol = clockModeReport.report2.secondPickupCol;
+                    NVIC_DisableIRQ(TIM3_IRQn);
+                    __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
+                    
+                    // Enable the update interrupt
+                    htim3.Instance->DIER |= TIM_DIER_UIE;
+                    
+                    __HAL_TIM_SET_COUNTER(&htim3, 1000);
+                    // Start the timer
+                    HAL_TIM_Base_Start(&htim3);
+                    NVIC_EnableIRQ(TIM3_IRQn);
+
+                    startedPieceCheck = true;
+                    volatile int x = 1;
+                    
+                } else if (!startedPieceCheck && game->timeControl == NO_CLOCK && game->currentBoardState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 1 && ((!game->isWhiteMove && isupper(game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol])) || (game->isWhiteMove && islower(game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol])))) {
+                    game->currentMove->pieceNewSquare = true;
+                    game->currentMove->pieceNewRow = clockModeReport.firstPickupRow;
+                    game->currentMove->pieceNewCol = clockModeReport.firstPickupCol;
+                    NVIC_DisableIRQ(TIM3_IRQn);
+                    __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
+                    
+                    // Enable the update interrupt
+                    htim3.Instance->DIER |= TIM_DIER_UIE;
+                    
+                    __HAL_TIM_SET_COUNTER(&htim3, 1000);
+                    // Start the timer
+                    HAL_TIM_Base_Start(&htim3);
+                    NVIC_EnableIRQ(TIM3_IRQn);
+
+                    startedPieceCheck = true;
+                    volatile int x = 1;
+                    
+
+                } else if (startedPieceCheck && game->timeControl == NO_CLOCK && game->currentBoardState[game->currentMove->pieceNewRow][game->currentMove->pieceNewCol] == 0) {
+                    // Stop the timer
+                        HAL_TIM_Base_Stop(&htim3);
+                        
+                        // Reset the counter value to 10000
+                        __HAL_TIM_SET_COUNTER(&htim3, 1000);
+                        
+                        // Clear any pending interrupt flag
+                        __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
+                        
+                        startedPieceCheck = false;
+                    }
+
                 
             } else if(game->currentMove->isFinalState) {
                 // TODO ASAP!!!!!!!!!!!!!!!!!!! MAKE SURE WHEN TAKE THEY GO TO THAT SQUARE OR EN PASSANT, OTHERWISE ILLEGAL MOVE!!!!!!!!!!!!!!!!!!!

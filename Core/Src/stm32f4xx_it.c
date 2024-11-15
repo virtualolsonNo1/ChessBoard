@@ -312,7 +312,9 @@ void TIM3_IRQHandler(void)
   /* USER CODE BEGIN TIM3_IRQn 1 */
   HAL_TIM_Base_Stop(&htim3);
   startedPieceCheck = false;
-  if (!isErrorState && game.previousState[game.currentMove->pieceNewRow][game.currentMove->pieceNewCol] == 0 && game.currentBoardState[game.currentMove->pieceNewRow][game.currentMove->pieceNewCol] == 1) {
+  if (game.currentMove->pickupState == FIRST_PIECE_PICKUP && !isErrorState && game.previousState[game.currentMove->pieceNewRow][game.currentMove->pieceNewCol] == 0 && game.currentBoardState[game.currentMove->pieceNewRow][game.currentMove->pieceNewCol] == 1) {
+    game.currentMove->isFinalState = true;
+  } else if (game.currentMove->pickupState == SECOND_PIECE_PICKUP && !isErrorState && game.currentBoardState[game.currentMove->pieceNewRow][game.currentMove->pieceNewCol] == 1) {
     game.currentMove->isFinalState = true;
   }
 
