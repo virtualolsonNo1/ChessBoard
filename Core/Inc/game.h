@@ -55,6 +55,8 @@ struct MoveState {
     bool pieceNewSquare;
     uint8_t pieceNewRow;
     uint8_t pieceNewCol;
+    uint8_t secondPieceNewRow;
+    uint8_t secondPieceNewCol;
 };
 
 struct ErrorMessage {

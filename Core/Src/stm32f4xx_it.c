@@ -30,6 +30,7 @@
 /* USER CODE BEGIN TD */
 extern bool startedPieceCheck;
 extern bool isErrorState;
+extern bool moveIsCastling;
 
 /* USER CODE END TD */
 
@@ -314,7 +315,9 @@ void TIM3_IRQHandler(void)
   startedPieceCheck = false;
   if (game.currentMove->pickupState == FIRST_PIECE_PICKUP && !isErrorState && game.previousState[game.currentMove->pieceNewRow][game.currentMove->pieceNewCol] == 0 && game.currentBoardState[game.currentMove->pieceNewRow][game.currentMove->pieceNewCol] == 1) {
     game.currentMove->isFinalState = true;
-  } else if (game.currentMove->pickupState == SECOND_PIECE_PICKUP && !isErrorState && game.currentBoardState[game.currentMove->pieceNewRow][game.currentMove->pieceNewCol] == 1) {
+  } else if (!moveIsCastling && game.currentMove->pickupState == SECOND_PIECE_PICKUP && !isErrorState && game.currentBoardState[game.currentMove->pieceNewRow][game.currentMove->pieceNewCol] == 1) {
+    game.currentMove->isFinalState = true;
+  } else if (moveIsCastling && game.currentMove->pickupState == SECOND_PIECE_PICKUP && !isErrorState && game.currentBoardState[game.currentMove->pieceNewRow][game.currentMove->pieceNewCol] == 1 && game.currentBoardState[game.currentMove->secondPieceNewRow][game.currentMove->secondPieceNewCol] == 1) {
     game.currentMove->isFinalState = true;
   }
 

@@ -462,18 +462,61 @@ void updateMoveShit(struct GameState* game) {
                     volatile int x = 1;
                     
 
-                } else if (startedPieceCheck && game->timeControl == NO_CLOCK && game->currentBoardState[game->currentMove->pieceNewRow][game->currentMove->pieceNewCol] == 0) {
+                } else if (!moveIsCastling && startedPieceCheck && game->timeControl == NO_CLOCK && game->currentBoardState[game->currentMove->pieceNewRow][game->currentMove->pieceNewCol] == 0) {
+                    // Stop the timer
+                    HAL_TIM_Base_Stop(&htim3);
+                    // Reset the counter value to 10000
+                    __HAL_TIM_SET_COUNTER(&htim3, 1000);
+                    // Clear any pending interrupt flag
+                    __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
+                    startedPieceCheck = false;
+                } else if (moveIsCastling && !startedPieceCheck && game->timeControl == NO_CLOCK) {
+                    int numPiecesOnLights = 0;
+                    int firstLightRow = 8;
+                    int firstLightCol = 8;
+                    int secondLightRow = 8;
+                    int secondLightCol = 8;
+                    for(int a = 0; a < 8; a++) {
+                        for(int b = 0; b < 8; b++) {
+                            if (game->currentMove->allPieceLights[a][b] == 1 && game->currentBoardState[a][b] == 1) {
+                                numPiecesOnLights++;
+                                if (numPiecesOnLights == 1) {
+                                    firstLightRow = a;
+                                    firstLightCol = b;
+                                } else if (numPiecesOnLights == 2) {
+                                    secondLightRow = a;
+                                    secondLightCol = b;
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (numPiecesOnLights == 2) {
+                        game->currentMove->pieceNewSquare = true;
+                        game->currentMove->pieceNewRow = firstLightRow;
+                        game->currentMove->pieceNewCol = firstLightCol;
+                        game->currentMove->secondPieceNewRow = secondLightRow;
+                        game->currentMove->secondPieceNewCol = secondLightCol;
+                        NVIC_DisableIRQ(TIM3_IRQn);
+                        __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
+                        // Enable the update interrupt
+                        htim3.Instance->DIER |= TIM_DIER_UIE;
+                        __HAL_TIM_SET_COUNTER(&htim3, 1000);
+                        // Start the timer
+                        HAL_TIM_Base_Start(&htim3);
+                        NVIC_EnableIRQ(TIM3_IRQn);
+                        startedPieceCheck = true;
+                        volatile int x = 1;
+                    }
+                } else if (moveIsCastling && startedPieceCheck && game->timeControl == NO_CLOCK && (game->currentBoardState[game->currentMove->pieceNewRow][game->currentMove->pieceNewCol] == 0 || game->currentBoardState[game->currentMove->secondPieceNewRow][game->currentMove->secondPieceNewCol] == 0)) {
                     // Stop the timer
                         HAL_TIM_Base_Stop(&htim3);
-                        
                         // Reset the counter value to 10000
                         __HAL_TIM_SET_COUNTER(&htim3, 1000);
-                        
                         // Clear any pending interrupt flag
                         __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
-                        
                         startedPieceCheck = false;
-                    }
+                }
 
                 
             } else if(game->currentMove->isFinalState) {
