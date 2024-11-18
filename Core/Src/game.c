@@ -279,7 +279,7 @@ void updateMoveShit(struct GameState* game) {
                     clockModeReport.report2.finalPickupRow = 8;
                     game->currentMove->pickupState = SECOND_PIECE_PICKUP;
                     
-                    
+                    // CARLTODO: IS THIS EVEN NECESSARY?????????????????????????!!!!!!!!!!!!!!!!!!!!!!!!1
                     if (startedPieceCheck && game->timeControl == NO_CLOCK) {
                         // Stop the timer
                         HAL_TIM_Base_Stop(&htim3);
@@ -304,18 +304,39 @@ void updateMoveShit(struct GameState* game) {
                             isEnPassant = true;
                             if (game->isWhiteMove) {
                                 if (isupper(game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol])) {
+                                    // en passant final square
                                     game->currentMove->lightState[clockModeReport.report2.secondPickupRow - 1][clockModeReport.report2.secondPickupCol] = 1;
+                                    // keep track of en passant final square
+                                    game->currentMove->pieceNewRow = clockModeReport.report2.secondPickupRow - 1;
+                                    game->currentMove->pieceNewCol = clockModeReport.report2.secondPickupCol;
+                                    
+                                    // set square of 
                                     game->currentMove->lightState[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] = 0;
                                 } else {
+                                    // en passant final square
                                     game->currentMove->lightState[clockModeReport.firstPickupRow - 1][clockModeReport.firstPickupCol] = 1;
+                                    // keep track of en passant final square
+                                    game->currentMove->pieceNewRow = clockModeReport.firstPickupRow - 1;
+                                    game->currentMove->pieceNewCol = clockModeReport.firstPickupCol;
+
                                     game->currentMove->lightState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] = 0;
                                 }
                             } else {
                                 if (islower(game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol])) {
+                                    // en passant final square
                                     game->currentMove->lightState[clockModeReport.report2.secondPickupRow + 1][clockModeReport.report2.secondPickupCol] = 1;
+                                    // keep track of en passant final square
+                                    game->currentMove->pieceNewRow = clockModeReport.report2.secondPickupRow + 1;
+                                    game->currentMove->pieceNewCol = clockModeReport.report2.secondPickupCol;
+
                                     game->currentMove->lightState[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] = 0;
                                 } else {
+                                    // en passant final square
                                     game->currentMove->lightState[clockModeReport.firstPickupRow + 1][clockModeReport.firstPickupCol] = 1;
+                                    // keep track of en passant final square
+                                    game->currentMove->pieceNewRow = clockModeReport.firstPickupRow + 1;
+                                    game->currentMove->pieceNewCol = clockModeReport.firstPickupCol;
+
                                     game->currentMove->lightState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] = 0;
                                 }
                             }
@@ -327,7 +348,6 @@ void updateMoveShit(struct GameState* game) {
                         
                     } else {
                         // not potential final spot for piece, but could be en passant or castling
-                        // TODO: CHECK FOR EN PESSANT and if third+ piece picked up
                         if (checkCastling()) {
                             moveIsCastling = true;
                             game->currentMove->lightsOn = true;
@@ -423,9 +443,8 @@ void updateMoveShit(struct GameState* game) {
                     return;
                 } 
                 
-                
-                // if the piece is put back on it's starting square instead of new square (i.e. the piece where it landed matches who's move it is), error handle
-                if (!startedPieceCheck && game->timeControl == NO_CLOCK && game->currentBoardState[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 1 && ((!game->isWhiteMove && isupper(game->previousStateChar[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol])) || (game->isWhiteMove && islower(game->previousStateChar[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol])))) {
+                // if check for piece on final square not started and second piece picked up is final square, start check for said square
+                if (!isEnPassant && !startedPieceCheck && game->timeControl == NO_CLOCK && game->currentBoardState[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 1 && ((!game->isWhiteMove && isupper(game->previousStateChar[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol])) || (game->isWhiteMove && islower(game->previousStateChar[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol])))) {
                     game->currentMove->pieceNewSquare = true;
                     game->currentMove->pieceNewRow = clockModeReport.report2.secondPickupRow;
                     game->currentMove->pieceNewCol = clockModeReport.report2.secondPickupCol;
@@ -443,7 +462,8 @@ void updateMoveShit(struct GameState* game) {
                     startedPieceCheck = true;
                     volatile int x = 1;
                     
-                } else if (!startedPieceCheck && game->timeControl == NO_CLOCK && game->currentBoardState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 1 && ((!game->isWhiteMove && isupper(game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol])) || (game->isWhiteMove && islower(game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol])))) {
+                // if check for piece on final square not started and first piece picked up is final square, start check for said square
+                } else if (!isEnPassant && !startedPieceCheck && game->timeControl == NO_CLOCK && game->currentBoardState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 1 && ((!game->isWhiteMove && isupper(game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol])) || (game->isWhiteMove && islower(game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol])))) {
                     game->currentMove->pieceNewSquare = true;
                     game->currentMove->pieceNewRow = clockModeReport.firstPickupRow;
                     game->currentMove->pieceNewCol = clockModeReport.firstPickupCol;
@@ -461,8 +481,8 @@ void updateMoveShit(struct GameState* game) {
                     startedPieceCheck = true;
                     volatile int x = 1;
                     
-
-                } else if (!moveIsCastling && startedPieceCheck && game->timeControl == NO_CLOCK && game->currentBoardState[game->currentMove->pieceNewRow][game->currentMove->pieceNewCol] == 0) {
+                // if check for piece on final square not started and castling is occurring, start check for final castling squares to see if both have a piece on them
+                } else if (!isEnPassant && !moveIsCastling && startedPieceCheck && game->timeControl == NO_CLOCK && game->currentBoardState[game->currentMove->pieceNewRow][game->currentMove->pieceNewCol] == 0) {
                     // Stop the timer
                     HAL_TIM_Base_Stop(&htim3);
                     // Reset the counter value to 10000
@@ -491,6 +511,7 @@ void updateMoveShit(struct GameState* game) {
                         }
                     }
                     
+                    // if there are pieces on both castling final squares, start timer for checking they're there for 1 second
                     if (numPiecesOnLights == 2) {
                         game->currentMove->pieceNewSquare = true;
                         game->currentMove->pieceNewRow = firstLightRow;
@@ -510,13 +531,37 @@ void updateMoveShit(struct GameState* game) {
                     }
                 } else if (moveIsCastling && startedPieceCheck && game->timeControl == NO_CLOCK && (game->currentBoardState[game->currentMove->pieceNewRow][game->currentMove->pieceNewCol] == 0 || game->currentBoardState[game->currentMove->secondPieceNewRow][game->currentMove->secondPieceNewCol] == 0)) {
                     // Stop the timer
-                        HAL_TIM_Base_Stop(&htim3);
-                        // Reset the counter value to 10000
-                        __HAL_TIM_SET_COUNTER(&htim3, 1000);
-                        // Clear any pending interrupt flag
-                        __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
-                        startedPieceCheck = false;
+                    HAL_TIM_Base_Stop(&htim3);
+                    // Reset the counter value to 10000
+                    __HAL_TIM_SET_COUNTER(&htim3, 1000);
+                    // Clear any pending interrupt flag
+                    __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
+                    startedPieceCheck = false;
+                    
+                // if en passant is move played by two pieces that were picked up, and a piece is on the final square for said move, start the timer
+                } else if (isEnPassant && !startedPieceCheck && game->timeControl  == NO_CLOCK && game->currentBoardState[game->currentMove->pieceNewRow][game->currentMove->pieceNewCol] == 1) {
+                    game->currentMove->pieceNewSquare = true;
+                    NVIC_DisableIRQ(TIM3_IRQn);
+                    __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
+                    // Enable the update interrupt
+                    htim3.Instance->DIER |= TIM_DIER_UIE;
+                    __HAL_TIM_SET_COUNTER(&htim3, 1000);
+                    // Start the timer
+                    HAL_TIM_Base_Start(&htim3);
+                    NVIC_EnableIRQ(TIM3_IRQn);
+                    startedPieceCheck = true;
+                
+                // if en passant is move played by two pieces that were picked up, and timer was started due to piece on final square, but the piece is no longer there, stop the timer
+                } else if (isEnPassant && startedPieceCheck && game->timeControl  == NO_CLOCK && game->currentBoardState[game->currentMove->pieceNewRow][game->currentMove->pieceNewCol] == 0) {
+                    // Stop the timer
+                    HAL_TIM_Base_Stop(&htim3);
+                    // Reset the counter value to 10000
+                    __HAL_TIM_SET_COUNTER(&htim3, 1000);
+                    // Clear any pending interrupt flag
+                    __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
+                    startedPieceCheck = false;
                 }
+
 
                 
             } else if(game->currentMove->isFinalState) {
