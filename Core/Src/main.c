@@ -192,6 +192,7 @@ void updateTimeOld() {
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+  // TODO: ADD IN DELAY BEFORE USB INIT SHIT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   /* USER CODE END 1 */
 
