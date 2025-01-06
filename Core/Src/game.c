@@ -378,11 +378,9 @@ void updateMoveShit(struct GameState* game) {
                 // if piece is moved over one of it's potential moves, only light up that square and it's original spot
                 } else if (game->currentMove->lightsOn && game->currentMove->firstPiecePlayersColor && game->currentBoardState[i][j] == 1 && game->currentMove->allPieceLights[i][j] == 1 && game->previousState[i][j] == 0) {
                     // TODO: TEST WITH PRINTLN DEBUGGING AND OTHER SHIT!!!! ALSO, HANDLE KING MOVE TWO SQUARES FOR CASTLING
-                    if (!startedPieceCheck && game->timeControl == NO_CLOCK && !((game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'K' || game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'k') && clockModeReport.firstPickupCol == 4 && (game->currentMove->allPieceLights[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol + 2] == 1 || game->currentMove->allPieceLights[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol - 2] == 1))) {
-                        // HAL_TIM_Base_Start_IT(&htim3);
-                        // htim3.Instance->CR1 |= TIM_CR1_
-                        // HAL_TIM_Base_Init(&htim3);
-                    // Clear any pending interrupt flag
+                    if (!startedPieceCheck && game->timeControl == NO_CLOCK && !((game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'K' || game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'k') && clockModeReport.firstPickupCol == 4 && ((game->currentMove->allPieceLights[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol + 2] == 1 && clockModeReport.firstPickupRow == i && clockModeReport.firstPickupCol + 2 == j) || (game->currentMove->allPieceLights[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol - 2] == 1 && clockModeReport.firstPickupRow == i && clockModeReport.firstPickupCol - 2 == j)))) {
+
+                        // Clear any pending interrupt flag
                         NVIC_DisableIRQ(TIM3_IRQn);
                         __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
                         
@@ -680,7 +678,7 @@ void updateMoveShit(struct GameState* game) {
                     if (game->previousState[a][b] == 0 && game->currentBoardState[a][b] == 1 && game->currentMove->lightState[a][b] == 1) {
                         onNewSquare = true;
                             // if king is moved two spots from current one, that shit aint legal 
-                            if ((game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'K' || game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'k') && clockModeReport.firstPickupCol == 4 && (game->currentMove->allPieceLights[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol + 2] == 1 || game->currentMove->allPieceLights[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol - 2] == 1)) {
+                            if ((game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'K' || game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'k') && clockModeReport.firstPickupCol == 4 && ((game->currentMove->allPieceLights[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol + 2] == 1 && clockModeReport.firstPickupRow == i && clockModeReport.firstPickupCol + 2 == j) || (game->currentMove->allPieceLights[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol - 2] == 1 && clockModeReport.firstPickupRow == i && clockModeReport.firstPickupCol - 2 == j))) {
                                 isErrorState = true;
                                 errorMessage.numPieces = 1;
                                 desktopError = true;

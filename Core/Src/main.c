@@ -209,6 +209,8 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
+  // delay to let USB phy initialize before initializing all MCU peripherals. Lets display turn on properly
+  HAL_Delay(2000);
 
   /* USER CODE END SysInit */
 
