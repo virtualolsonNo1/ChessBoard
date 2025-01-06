@@ -48,8 +48,6 @@ void displayNoClock() {
     
     max7219_SendData(DIGIT_8, 0x76);
     max7219_SendData(DIGIT_6, 0x4E);
-    // TODO: CAN THIS JUST BE HERE??????!!!!!!!
-    // max7219_Decode_On();
 }
 
 void changeTimeControl(struct GameState* game) {
@@ -238,8 +236,6 @@ bool checkCastling() {
         return false;
     }
 }
-
-
 
 void updateMoveShit(struct GameState* game) {
     for(int i = 0; i < 8; i++) {
@@ -657,40 +653,32 @@ void updateMoveShit(struct GameState* game) {
                         desktopError = true;
                         errorMessage.resetState = NO_PIECE_PICKUP;
                         return;
-
-
                     }
-                    
-                    
-                    /* else if (game->previousState[i][j] == 0 && game->currentBoardState[i][j] == 1) {
-                        clockModeReport.report2.finalPickupRow = i;
-                        clockModeReport.report2.finalPickupCol = j;
-                        enteredOne = true;
-                                               
-                    } */
                 
                 // as opposed to a take, if piece is moved, update report accordingly once final square is found
                 } else {
                     bool onNewSquare = false;
                     for(int a = 0; a < 8; a++) {
                         for(int b = 0; b < 8; b++) {
-                    // if piece is on new square and that square is lit up, probably valid spot besides one king edge case
-                    if (game->previousState[a][b] == 0 && game->currentBoardState[a][b] == 1 && game->currentMove->lightState[a][b] == 1) {
-                        onNewSquare = true;
-                            // if king is moved two spots from current one, that shit aint legal 
-                            if ((game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'K' || game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'k') && clockModeReport.firstPickupCol == 4 && ((game->currentMove->allPieceLights[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol + 2] == 1 && clockModeReport.firstPickupRow == i && clockModeReport.firstPickupCol + 2 == j) || (game->currentMove->allPieceLights[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol - 2] == 1 && clockModeReport.firstPickupRow == i && clockModeReport.firstPickupCol - 2 == j))) {
-                                isErrorState = true;
-                                errorMessage.numPieces = 1;
-                                desktopError = true;
-                                errorMessage.resetState = NO_PIECE_PICKUP;
-                                return;
+                            // if piece is on new square and that square is lit up, probably valid spot besides one king edge case
+                            if (game->previousState[a][b] == 0 && game->currentBoardState[a][b] == 1 && game->currentMove->lightState[a][b] == 1) {
+                                onNewSquare = true;
+                                    // if king is moved two spots from current one, that shit aint legal 
+                                    if ((game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'K' || game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'k') && clockModeReport.firstPickupCol == 4 && ((game->currentMove->allPieceLights[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol + 2] == 1 && clockModeReport.firstPickupRow == i && clockModeReport.firstPickupCol + 2 == j) || (game->currentMove->allPieceLights[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol - 2] == 1 && clockModeReport.firstPickupRow == i && clockModeReport.firstPickupCol - 2 == j))) {
+                                        isErrorState = true;
+                                        errorMessage.numPieces = 1;
+                                        desktopError = true;
+                                        errorMessage.resetState = NO_PIECE_PICKUP;
+                                        return;
+                                    }
+                                    clockModeReport.report1.finalPickupRow = a;
+                                    clockModeReport.report1.finalPickupCol = b;
+                                    enteredOne = true;
                             }
-                            clockModeReport.report1.finalPickupRow = a;
-                            clockModeReport.report1.finalPickupCol = b;
-                            enteredOne = true;
-                    }
                         }
                     }
+                    
+                    // if piece not on new square, error occurred
                     if (!onNewSquare) {
                         isErrorState = true;
                         errorMessage.numPieces = 1;
@@ -720,22 +708,13 @@ void updateMoveShit(struct GameState* game) {
                         
                     }
 
-                    // turn off lights for potential moves for piece
-                    // isEnPassant = false;
-                    // moveIsCastling = false;
-                    // lightsOff();
-
                     return;
-                } else {
-                    // TODO: CHANGE THIS TO CHECK FOR IF IT DOESN"T ENTER SECOND PIECE PICKUP OR FIRST PIECE FINAL SPOT NOT FOUND, as now it'll just enter here whenever we're not on the final square
-                }
-            
+                }        
             } 
         }
     }
     
 }
-
 
 void convert2DArrayToBitarray(const uint8_t input[8][8], uint8_t output[8]) {
     for (int i = 0; i < 8; i++) {
@@ -748,9 +727,7 @@ void convert2DArrayToBitarray(const uint8_t input[8][8], uint8_t output[8]) {
     }
 }
 
-
 void updateReceivedLights() {
-//    if (game.currentMove->receivedLightData && !(game.currentMove->lightsOn)) {
         game.currentMove->lightsOn = true;
         uint8_t lights[8];
         convert2DArrayToBitarray(game.currentMove->allPieceLights, lights);       
@@ -763,7 +740,6 @@ void updateReceivedLights() {
       while(!(GPIOA->ODR & GPIO_PIN_10)) {}
       HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
       while((GPIOA->ODR & GPIO_PIN_10)) {}
-//    }
 }
 
 void updateLights() {
@@ -831,8 +807,6 @@ void animateInitialLights() {
         updateLights();
 
         osDelay(100);
-
-        // HAL_Delay(20);
     }
     osDelay(5);
 }
@@ -876,5 +850,4 @@ void checkStartingSquares() {
     if (lightsNeedUpdated) {
         updateLights();
     }
-    
 }

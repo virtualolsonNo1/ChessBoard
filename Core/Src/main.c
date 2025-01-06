@@ -1,4 +1,4 @@
-/* USER CODE BEGIN Header */
+
 /**
   ******************************************************************************
   * @file           : main.c
@@ -177,12 +177,6 @@ void updateTimeOld() {
     }
 }
 
-
-// TODO: MAKE THSI SHIT!!!!!!!!
-// void flipBoardArrays(struct MoveState* move) {
-// }
-
-
 /* USER CODE END 0 */
 
 /**
@@ -192,8 +186,6 @@ void updateTimeOld() {
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-  // TODO: ADD IN DELAY BEFORE USB INIT SHIT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -354,171 +346,6 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-  // For Report ID 1
-  // uint8_t report1[5] = {0, 1, 2, 3, 4};
-  // report1[0] = 1;
-  // clockModeReport.reportId = 1;
-  // clockModeReport.firstPickupRow = 2;
-  // clockModeReport.firstPickupCol = 3;
-  // clockModeReport.report1.finalPickupRow = 4;
-  // clockModeReport.report1.finalPickupCol = 5;
-  // int size = sizeof(clockModeReport);
-  // for(int i = 0; i < 8; i++) {
-  //   for(int j = 0; j < 8; j++) {
-  //   // report1[i] = i + 1;
-  //   clockModeReport.secondPickupState[i][j] = i;
-  //   }
-  // }
-  
-  // ... fill the report ...
-  // USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, report1, 5);
-
-  // HAL_Delay(500);
-  // For Report ID 2
-  // uint8_t report2[7] = {0, 1, 2, 3, 4, 5, 6};
-  // report2[0] = 2;
-  // clockModeReport.reportId = 2;
-  // clockModeReport.firstPickupRow = 2;
-  // clockModeReport.firstPickupCol = 3;
-  // clockModeReport.report2.secondPickupRow = 4;
-  // clockModeReport.report2.secondPickupCol = 5;
-  // clockModeReport.report2.finalPickupRow = 6;
-  // clockModeReport.report2.finalPickupCol = 7;
-  // for(int i = 1; i < 8; i++) {
-  //   for(int j = 0; j < 8; j++) {
-  //   // report2[i] = i - 1;
-  //   clockModeReport.thirdPickupState[i][j] = i;
-  //   }
-  // }
-  // ... fill the report ...
-  // USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,  report2, 7);
-  // HAL_Delay(200);
-
-    //properly update display of each player's time
-    // updateTimeOld();
-    // if (count % 2 == 0) {
-    //   mousehid.mouse_x = 200;
-    // } else {
-    //   mousehid.mouse_x = -200;
-    // }
-
-    // mousehid.button = 1;
-    // USBD_HID_SendReport(&hUsbDeviceFS, &mousehid, sizeof (mousehid));
-    HAL_Delay (10);
-
-
-    // //de-assert and re-assert load pin to load values into register's D flip flops
-    // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
-    // HAL_Delay(1);
-    // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
-
-    // //transmit MISO data from shift registers into boardstate buffer
-    // HAL_SPI_Receive(&hspi1, (uint8_t *)boardstate, 8, 100000);
-
-    // //turn received boardstate into 2d array instead of 1d array of uint8_t's
-    // while((SPI1->SR & 0b1)) {}
-    
-    // //constatntly store state of board in game so can be used when button is pressed
-    // for(int i = 0; i < 8; i++) {
-    //   game.currentBoardState[i][0] = (0b10000000 & ~boardstate[i]) >> 7; 
-    //   game.currentBoardState[i][1] = (0b01000000 & ~boardstate[i]) >> 6; 
-    //   game.currentBoardState[i][2] = (0b00100000 & ~boardstate[i]) >> 5; 
-    //   game.currentBoardState[i][3] = (0b00010000 & ~boardstate[i]) >> 4; 
-    //   game.currentBoardState[i][4] = (0b00001000 & ~boardstate[i]) >> 3; 
-    //   game.currentBoardState[i][5] = (0b00000100 & ~boardstate[i]) >> 2; 
-    //   game.currentBoardState[i][6] = (0b00000010 & ~boardstate[i]) >> 1; 
-    //   game.currentBoardState[i][7] = (0b00000001 & ~boardstate[i]) >> 0; 
-
-    // }
-
-
-    volatile int x = 8;
-
-
-  //TODO: READD LED CODE ONCE THEY'RE WORKING! Will eventually need to get data back from app with what squares to light up when piece picked up
-    //convert hall data to LED order (as shift register wired up backwards for hall vs LED)
-    // boardstateToLed(&boardstate, &ledstate);
-
-    // //send buffer to shift registers before sending their values to LEDs
-    //  volatile int test = HAL_SPI_Transmit(&hspi1, (uint8_t *)ledstate, 8, 10000);
-    // while(!(SPI1->SR & 0b10)) {}
-
-    // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
-    // while(!(GPIOA->ODR & GPIO_PIN_10)) {}
-    // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
-    // while((GPIOA->ODR & GPIO_PIN_10)) {}
-    
-    // volatile int y = 8;
-
-    // loop through to test LED's in binary fashion, testing all possible combinations
-    // for(int i = 0; i < 256; i++) {
-    //   for(int j = 0; j < 8; j++) {
-    //     ledstate[j] = i;
-    //   }
-    //   volatile int test = HAL_SPI_Transmit(&hspi1, (uint8_t *)ledstate, 8, 10000);
-    //   while(!(SPI1->SR & 0b10)) {}
-
-    //   //after transmitting LED data to shift registers, assert and de-assert load pin to display those values
-    //   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
-    //   while(!(GPIOA->ODR & GPIO_PIN_10)) {}
-    //   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
-    //   while((GPIOA->ODR & GPIO_PIN_10)) {}
-    // }
-
-    //TODO: update to send better data later
-
-    // if (game.gameStarted) {
-    // //calculate if move occurred and capture data related to said move
-    // updateMoveShit(&game);
-    // } else {
-    //   // light up squares where pieces aren't but should be before start of game
-    //   checkStartingSquares();
-    // }
-
-    // //if current move is finished, transmit said data to teh desktop app
-    // if(game.currentMove->isFinalState && game.gameStarted) {
-      
-    //   if (game.currentMove->secondPiecePickup) {
-        
-    //     clockModeReport.reportId = 2;
-    //     USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 7);
-    //   } else {
-    //     clockModeReport.reportId = 1;
-
-    //     USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 5);
-    //   }
-
-    // volatile int x = 1;
-    
-    // // TODO: MAKE REPORT TO BE SENT BACK HERE WITH CHAR BOARD POSITION!!!!!!!!!!!!!!!!!!!!
-
-    
-    //   if (clockModeReport.reportId == 2) {
-    //     clockModeReport.report2.finalPickupRow = 8;
-    //     clockModeReport.report2.finalPickupCol = 8;
-    //   } else {
-    //     clockModeReport.report1.finalPickupRow = 8;
-    //     clockModeReport.report1.finalPickupCol = 8;
-        
-    //   }
-    //   game.currentMove->firstPiecePickup = false;
-    //   game.currentMove->secondPiecePickup = false;
-    //   game.currentMove->isFinalState = false;
-    //   game.currentMove->lightsOn = false;
-    //   game.currentMove->pieceNewSquare = false;
-    // }
-    
-
-    // volatile bool sendTest = false;
-    // if (sendTest) {
-    //   HAL_Delay(1000);
-    //   sendTestGame();
-
-    //   HAL_Delay(1000);
-    //   lightsOff();
-
-    // }
-    
   }
   /* USER CODE END 3 */
 }
@@ -885,7 +712,7 @@ void blinkError(void *argument)
       //turn received boardstate into 2d array instead of 1d array of uint8_t's
       while((SPI1->SR & 0b1)) {}
       
-      //constatntly store state of board in game so can be used when button is pressed
+      //constantly store state of board in game struct so can be used when button is pressed
       for(int i = 0; i < 8; i++) {
         game.currentBoardState[i][0] = (0b10000000 & ~boardstate[i]) >> 7; 
         game.currentBoardState[i][1] = (0b01000000 & ~boardstate[i]) >> 6; 
@@ -928,19 +755,21 @@ void blinkError(void *argument)
           }
         }
 
+        // if board is back to how it previously was, exit error state
         if (arrsSame) {
-          // TODO: DO WE WANT THIS???????????????!!!!!!!!!!!!!!!!!!!!!
-          // isEnPassant = false;
-          // moveIsCastling = false;
           game.currentMove->lightsOn = false;
           isErrorState = false;
           inErrorState = false;
           lightsOff();
           osThreadResume(updateMoveTaskHandle);
+          
+          // if it's anything but second piece pickup, simply set en passant and castling to false in case they were true and go back to NO_PIECE_PICKUP
           if (errorMessage.resetState == NO_PIECE_PICKUP || errorMessage.resetState == FIRST_PIECE_PICKUP || isEnPassant || moveIsCastling) {
             isEnPassant = false;
             moveIsCastling = false;
             game.currentMove->pickupState = NO_PIECE_PICKUP;
+            
+          // if second piece pickup, and game back to all but those two down, light up just those two spots
           } else if (errorMessage.resetState == SECOND_PIECE_PICKUP) {
             game.currentMove->pickupState = errorMessage.resetState;
             game.currentMove->lightsOn = true;
@@ -953,7 +782,6 @@ void blinkError(void *argument)
           break;
 
         } else {
-          // blinkLightsArr[errorMessage.firstPickupRow][errorMessage.firstPickupCol] = 1;
           memcpy(game.currentMove->lightState, blinkLightsArr, 64);
           updateLights();
           count++;
@@ -1035,9 +863,6 @@ void updateMove(void *argument)
 
     }
 
-    // updateTimeOld();
-    // updateTimeOld();
-
     if (game.gameStarted) {
       //calculate if move occurred and capture data related to said move
       if (!game.currentMove->isFinalState) {
@@ -1073,25 +898,10 @@ void updateMove(void *argument)
         }
       }
       
-
-      // TODO: MOVE TO BETTER SPOT SO NEVER HAVE TIME ISSUES AFTER HITTING BUTTON!!!!!!!!!!!!!!!!!!!!! IN HORRIBLE SPOT HERE!!!!!!!!!!!!!!!!!!!!!!!
     // if move sent to desktop app is wrong because they play it in the wrong spot and hit button, etc
     if (isErrorState) {
       if (desktopError) {
       desktopError = false;
-      // check which player's turn it is now and reset it to previous player and turn on the appropriate clock
-      // if (game.activePlayer == game.player2) {
-      //   game.activePlayer = game.player1;
-      //   game.isWhiteMove = true;
-      //   HAL_TIM_Base_Stop(&htim5);
-      //   HAL_TIM_Base_Start(&htim2);
-      // } else {
-      //   game.activePlayer = game.player2;
-      //   game.isWhiteMove = false;
-      //   HAL_TIM_Base_Stop(&htim2);
-      //   HAL_TIM_Base_Start(&htim5);
-      // }
-      // game.isWhiteMove = !game.isWhiteMove;
       game.currentMove->isFinalState = false;
       }
       
@@ -1109,8 +919,7 @@ void updateMove(void *argument)
     memset(game.currentMove->allPieceLights, 0, 64);
     memset(game.currentMove->lightState, 0, 64);
     
-    // TODO: MAKE REPORT TO BE SENT BACK HERE WITH CHAR BOARD POSITION!!!!!!!!!!!!!!!!!!!!
-
+    // update who active player is and start/stop clock accordingly
     if (!game.isWhiteMove) {
       game.activePlayer = game.player1;
       game.isWhiteMove = true;
@@ -1123,28 +932,24 @@ void updateMove(void *argument)
         HAL_TIM_Base_Start(&htim5);
     }
     
-      if (clockModeReport.reportId == 2) {
-        clockModeReport.report2.finalPickupRow = 8;
-        clockModeReport.report2.finalPickupCol = 8;
-      } else {
-        clockModeReport.report1.finalPickupRow = 8;
-        clockModeReport.report1.finalPickupCol = 8;
-        
-      }
-      game.currentMove->pickupState = NO_PIECE_PICKUP;
-      game.currentMove->isFinalState = false;
-      game.currentMove->lightsOn = false;
-      game.currentMove->pieceNewSquare = false;
-      game.currentMove->receivedLightData = false;
-      isEnPassant = false;
-      moveIsCastling = false;
-      startedPieceCheck = false;
-      // memset(game.currentMove->allPieceLights, 0, 64);
-      // memset(game.currentMove->lightState, 0, 64);
-      lightsOff();
-
-    // osDelay(100);
-
+    // reset clockModeReport and game's current move to prepare for next move
+    if (clockModeReport.reportId == 2) {
+      clockModeReport.report2.finalPickupRow = 8;
+      clockModeReport.report2.finalPickupCol = 8;
+    } else {
+      clockModeReport.report1.finalPickupRow = 8;
+      clockModeReport.report1.finalPickupCol = 8;
+      
+    }
+    game.currentMove->pickupState = NO_PIECE_PICKUP;
+    game.currentMove->isFinalState = false;
+    game.currentMove->lightsOn = false;
+    game.currentMove->pieceNewSquare = false;
+    game.currentMove->receivedLightData = false;
+    isEnPassant = false;
+    moveIsCastling = false;
+    startedPieceCheck = false;
+    lightsOff();
     }
     osDelay(10);
   }
