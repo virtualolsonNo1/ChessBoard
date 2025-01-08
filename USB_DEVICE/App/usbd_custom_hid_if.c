@@ -160,12 +160,12 @@ __ALIGN_BEGIN static uint8_t CUSTOM_HID_ReportDesc_FS[USBD_CUSTOM_HID_REPORT_DES
   0x95, 0x01,        //   Report Count (1)
   0x09, 0x08,        //   Usage (0x08 - resetGame)
   0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
-  // Report ID 4: 64-byte array for light status (Input)
+  // Report ID 4: 8-byte array for light status (Input)
   0x85, 0x04,        //   Report ID (4)
   0x15, 0x00,        //   Logical Minimum (0)
   0x25, 0x01,        //   Logical Maximum (1)
   0x75, 0x08,        //   Report Size (8 bits)
-  0x95, 0x40,        //   Report Count (64)
+  0x95, 0x08,        //   Report Count (8)
   0x09, 0x09,        //   Usage (0x09 - Light Status)
   0x91, 0x02,        //   Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
   // Report ID 5: 64-byte array for letters/numbers (Output)
@@ -293,20 +293,7 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
     return -1;
   }
   
-  // if the report ID is 4, copy the data into the receiveData buffer
-  if (event_idx == LIGHTS_DATA_REPORT_OUT) {
-    // TEST!!!
-    volatile uint8_t test[65] = {0};
-    memcpy(test, hUsbDeviceFS.pClassData, 65);
-    
-    
-    prevID = event_idx;
-    prevArr = true;
-    memcpy(receivedData, hUsbDeviceFS.pClassData + 1, sizeof(receivedData));
-    if (event_idx == 4)
-      convert1DArrayTo2DArray(receivedData, game.currentMove->lightState);
-      
-  } else if (event_idx == PIECES_DATA_REPORT_OUT) {
+   if (event_idx == PIECES_DATA_REPORT_OUT) {
     volatile uint8_t test[PIECES_REPORT_LEN] = {0};
     uint8_t stateCharNums[64] = {0};
     memcpy(test, hUsbDeviceFS.pClassData + 1, PIECES_REPORT_LEN);
@@ -334,16 +321,28 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
     osSemaphoreRelease(checkDesktopAppErrSem);
     return;
 
-  }  else if (prevArr && prevID == LIGHTS_DATA_REPORT_OUT) {
-    prevID = 255;
-    prevArr = false;
-    memcpy(&game.currentMove->lightState[7][7], hUsbDeviceFS.pClassData, 1);
+  // if the report ID is 4 for lights data, convert from 8 byte array to 8x8 2D array and make sure there are possible moves for the piece
+  }  else if (event_idx == LIGHTS_DATA_REPORT_OUT) {
+    uint8_t test[8] = {0};
+    memcpy(test, hUsbDeviceFS.pClassData + 1, sizeof(test));
+    // TODO: CONVERT 8 byte array to 8x8 2d array
+    for(int i = 0; i < 8; i++) {
+      game.currentMove->lightState[i][0] = (0b10000000 & test[i]) >> 7; 
+      game.currentMove->lightState[i][1] = (0b01000000 & test[i]) >> 6; 
+      game.currentMove->lightState[i][2] = (0b00100000 & test[i]) >> 5; 
+      game.currentMove->lightState[i][3] = (0b00010000 & test[i]) >> 4; 
+      game.currentMove->lightState[i][4] = (0b00001000 & test[i]) >> 3; 
+      game.currentMove->lightState[i][5] = (0b00000100 & test[i]) >> 2; 
+      game.currentMove->lightState[i][6] = (0b00000010 & test[i]) >> 1; 
+      game.currentMove->lightState[i][7] = (0b00000001 & test[i]) >> 0; 
+    }
+
     memcpy(game.currentMove->allPieceLights, game.currentMove->lightState, 64);
-    memset(receivedData, 0, 64);
-    volatile int x = 1;
     game.currentMove->receivedLightData = true;
     
     bool possibleMove = false;
+    
+    // check for possible moves
     for(int i = 0; i < 8; i++) {
       for(int j = 0; j < 8; j++) {
         if (game.currentMove->allPieceLights[i][j] == 1) {
@@ -352,19 +351,19 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
         } 
       }
     }
+    
+    // if there are no possible moves, set error state to true
     if (!possibleMove) {
       // set isErrorState to true so update move thread can suspend itself later and start blink error task
       isErrorState = true;
-      // if (game.currentMove->pickupState == FIRST_PIECE_PICKUP) {
-        errorMessage.numPieces = 1;
-        errorMessage.resetState = NO_PIECE_PICKUP;
-        errorMessage.firstPickupRow = clockModeReport.firstPickupRow;
-        errorMessage.firstPickupCol = clockModeReport.firstPickupCol;
-        if (waitForCastlingResponse) {
-          osSemaphoreRelease(checkCastleSem);
-          return;
-        }
-      // }
+      errorMessage.numPieces = 1;
+      errorMessage.resetState = NO_PIECE_PICKUP;
+      errorMessage.firstPickupRow = clockModeReport.firstPickupRow;
+      errorMessage.firstPickupCol = clockModeReport.firstPickupCol;
+      if (waitForCastlingResponse) {
+        osSemaphoreRelease(checkCastleSem);
+        return;
+      }
     } else {
       if (waitForCastlingResponse) {
         osSemaphoreRelease(checkCastleSem);
