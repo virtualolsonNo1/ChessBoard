@@ -18,6 +18,14 @@
 #define SECOND_PIECE_BIT_SHIFT 4
 #define FIRST_PIECE_BITS 0x0F 
 
+#define ONE_PIECE_PICKUP_REPORT_IN 1
+#define TWO_PIECE_PICKUP_REPORT_IN 2
+#define RESET_OR_LIGHTS_REPORT_IN 3
+#define RESET 255
+#define LIGHTS_DATA_REPORT_OUT 4
+#define PIECES_DATA_REPORT_OUT 5
+#define ERROR_REPORT_OUT 6
+
 // Empty square
 #define EMPTY 0
 // White pieces (uppercase)

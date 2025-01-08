@@ -294,7 +294,7 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
   }
   
   // if the report ID is 4, copy the data into the receiveData buffer
-  if (event_idx == 4) {
+  if (event_idx == LIGHTS_DATA_REPORT_OUT) {
     // TEST!!!
     volatile uint8_t test[65] = {0};
     memcpy(test, hUsbDeviceFS.pClassData, 65);
@@ -306,13 +306,14 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
     if (event_idx == 4)
       convert1DArrayTo2DArray(receivedData, game.currentMove->lightState);
       
-  } else if (event_idx == 5) {
+  } else if (event_idx == PIECES_DATA_REPORT_OUT) {
     volatile uint8_t test[PIECES_REPORT_LEN] = {0};
     uint8_t stateCharNums[64] = {0};
     memcpy(test, hUsbDeviceFS.pClassData + 1, PIECES_REPORT_LEN);
 
     // loop through received pieces data, converting each byte to the respective two characters it represents
     for(int i = 0; i < PIECES_REPORT_LEN; i++) {
+      // 4 MSbits are first piece (earlier index), 4 LSbits are second piece (second index)
       stateCharNums[i * 2] = PIECE_CHARS[test[i] >> SECOND_PIECE_BIT_SHIFT];        
       stateCharNums[(i * 2) + 1] = PIECE_CHARS[test[i] & FIRST_PIECE_BITS];        
     }
@@ -322,14 +323,10 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
     osSemaphoreRelease(checkDesktopAppErrSem);
 
   // if error received from desktop app, replay the move as button hit too early or for wrong move DESPITE ALL THAT ERROR HANDLING cause people are dumb ig
-  } else if (event_idx == 6) {
-    // CARLTODO: HOW TO FIX THIS CASTLING BUG???????????????????!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    // if (waitForCastlingResponse) {
-    //   osSemaphoreRelease(checkCastleSem);
-    //   return;
-    // }
+  } else if (event_idx == ERROR_REPORT_OUT) {
     uint8_t errorStatus;
-    memcpy(&errorStatus, hUsbDeviceFS.pClassData + 1, sizeof(1));
+    // TODO: THIS ISN"T USED RN, BUT MAYBE SEND ERROR CODE LATER WITH INFO ON WHAT IT WAS ON DESKTOP END!!!!!!!!!!!!
+    memcpy(&errorStatus, hUsbDeviceFS.pClassData + 1, 1);
     isErrorState = true;
     errorMessage.numPieces = 1;
     errorMessage.resetState = NO_PIECE_PICKUP;
@@ -337,12 +334,11 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
     osSemaphoreRelease(checkDesktopAppErrSem);
     return;
 
-  }  else if (prevArr && prevID == 4) {
+  }  else if (prevArr && prevID == LIGHTS_DATA_REPORT_OUT) {
     prevID = 255;
     prevArr = false;
     memcpy(&game.currentMove->lightState[7][7], hUsbDeviceFS.pClassData, 1);
     memcpy(game.currentMove->allPieceLights, game.currentMove->lightState, 64);
-    // memset(hUsbDeviceFS.pClassData, 0, 64);
     memset(receivedData, 0, 64);
     volatile int x = 1;
     game.currentMove->receivedLightData = true;
@@ -383,9 +379,6 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
     }
   }
   
-
-  // convert 64 byte array into 8x8 2d array
-
   volatile int x = 1;
   return (USBD_OK);
   /* USER CODE END 6 */
