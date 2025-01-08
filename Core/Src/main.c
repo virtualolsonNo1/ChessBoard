@@ -731,8 +731,6 @@ void blinkError(void *argument)
         memset(blinkLightsArr, 0, 64);
       }
 
-      // TODO: IS THIS EVEN NECESSARY???????????????????!!!!!!!!!!!!!!!!!!!!!!!!!
-      if (errorMessage.resetState == NO_PIECE_PICKUP || errorMessage.resetState == FIRST_PIECE_PICKUP || errorMessage.resetState == SECOND_PIECE_PICKUP) {
         // light up all pieces that are off board but need put back to get back to beginning of move
         bool arrsSame = true;
         for(int i = 0; i < 8; i++) {
@@ -789,8 +787,6 @@ void blinkError(void *argument)
           // TODO: UPDATE SO IT'S NOT A HALF SECOND DELAY ON CHECKING BOARD!!!!!!!!
           osDelay(500);
         }
-
-      }
       
     osDelay(1);
     }

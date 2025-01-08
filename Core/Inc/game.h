@@ -15,6 +15,26 @@
 #define THIRTY_MIN          30
 #define HOUR                60
 
+#define SECOND_PIECE_BIT_SHIFT 4
+#define FIRST_PIECE_BITS 0x0F 
+
+// Empty square
+#define EMPTY 0
+// White pieces (uppercase)
+#define W_PAWN 1
+#define W_KNIGHT 2
+#define W_BISHOP 3
+#define W_ROOK 4
+#define W_QUEEN 5
+#define W_KING 6
+// Black pieces (lowercase)
+#define B_PAWN 7
+#define B_KNIGHT 8
+#define B_BISHOP 9
+#define B_ROOK 10
+#define B_QUEEN 11
+#define B_KING 12
+
 typedef enum {
     ONE_MINUTE_LIMIT = 60000,
     TWO_MINUTE_LIMIT = 120000,

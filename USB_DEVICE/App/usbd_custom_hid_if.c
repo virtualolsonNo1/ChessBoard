@@ -47,6 +47,22 @@ bool desktopError = false;
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 
+// Mapping piece values to characters
+const char PIECE_CHARS[] = {
+    [EMPTY] = 0,     // EMPTY (0)
+    [W_PAWN] = 'P',  // W_PAWN (1)
+    [W_KNIGHT] = 'N',// W_KNIGHT (2)
+    [W_BISHOP] = 'B',// W_BISHOP (3)
+    [W_ROOK] = 'R',  // W_ROOK (4)
+    [W_QUEEN] = 'Q', // W_QUEEN (5)
+    [W_KING] = 'K',  // W_KING (6)
+    [B_PAWN] = 'p',  // B_PAWN (7)
+    [B_KNIGHT] = 'n',// B_KNIGHT (8)
+    [B_BISHOP] = 'b',// B_BISHOP (9)
+    [B_ROOK] = 'r',  // B_ROOK (10)
+    [B_QUEEN] = 'q', // B_QUEEN (11)
+    [B_KING] = 'k'   // B_KING (12)
+};
 extern struct GameState game;
 
 
@@ -80,7 +96,7 @@ extern struct GameState game;
   */
 
 /* USER CODE BEGIN PRIVATE_DEFINES */
-
+#define PIECES_REPORT_LEN 32
 /* USER CODE END PRIVATE_DEFINES */
 
 /**
@@ -154,11 +170,11 @@ __ALIGN_BEGIN static uint8_t CUSTOM_HID_ReportDesc_FS[USBD_CUSTOM_HID_REPORT_DES
   0x91, 0x02,        //   Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
   // Report ID 5: 64-byte array for letters/numbers (Output)
   0x85, 0x05,        //   Report ID (5)
-  0x15, 0x30,        //   Logical Minimum (48)
-  0x25, 0x7A,        //   Logical Maximum (122)
+  0x15, 0x00,        //   Logical Minimum (0 (two empty squares))
+  0x25, 0xCB,        //   Logical Maximum (203 (11001011 for Black King and Black Queen next to each other))
   0x75, 0x08,        //   Report Size (8 bits)
-  0x95, 0x40,        //   Report Count (64)
-  0x09, 0x0A,        //   Usage (0x0A - Letter/Number Array)
+  0x95, 0x20,        //   Report Count (32)
+  0x09, 0x0A,        //   Usage (0x0A - Chess Pieces array)
   0x91, 0x02,        //   Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
   // Report ID 6: 1-byte error message (Output)
   0x85, 0x06,        //   Report ID (6)
@@ -257,7 +273,7 @@ void convert1DArrayTo2DArray(uint8_t *input, uint8_t output[8][8]) {
 
 uint8_t prevID = 255;
 bool prevArr = false;
-uint8_t receivedData[65];
+uint8_t receivedData[64];
 
 /**
   * @brief  Manage the CUSTOM HID class events
@@ -278,7 +294,7 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
   }
   
   // if the report ID is 4, copy the data into the receiveData buffer
-  if (event_idx == 4 || event_idx == 5) {
+  if (event_idx == 4) {
     // TEST!!!
     volatile uint8_t test[65] = {0};
     memcpy(test, hUsbDeviceFS.pClassData, 65);
@@ -286,15 +302,25 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
     
     prevID = event_idx;
     prevArr = true;
-    memcpy(receivedData, hUsbDeviceFS.pClassData + 1, sizeof(receivedData) - 1);
+    memcpy(receivedData, hUsbDeviceFS.pClassData + 1, sizeof(receivedData));
     if (event_idx == 4)
       convert1DArrayTo2DArray(receivedData, game.currentMove->lightState);
-    else {
-      // if received light data, no error occurred on the desktop app end so can continue accordingly
-      osSemaphoreRelease(checkDesktopAppErrSem);
-      convert1DArrayTo2DArray(receivedData, game.previousStateChar);
-    }
       
+  } else if (event_idx == 5) {
+    volatile uint8_t test[PIECES_REPORT_LEN] = {0};
+    uint8_t stateCharNums[64] = {0};
+    memcpy(test, hUsbDeviceFS.pClassData + 1, PIECES_REPORT_LEN);
+
+    // loop through received pieces data, converting each byte to the respective two characters it represents
+    for(int i = 0; i < PIECES_REPORT_LEN; i++) {
+      stateCharNums[i * 2] = PIECE_CHARS[test[i] >> SECOND_PIECE_BIT_SHIFT];        
+      stateCharNums[(i * 2) + 1] = PIECE_CHARS[test[i] & FIRST_PIECE_BITS];        
+    }
+
+    convert1DArrayTo2DArray(stateCharNums, game.previousStateChar);
+    // if received pieces data, no error occurred on the desktop app end so can continue accordingly
+    osSemaphoreRelease(checkDesktopAppErrSem);
+
   // if error received from desktop app, replay the move as button hit too early or for wrong move DESPITE ALL THAT ERROR HANDLING cause people are dumb ig
   } else if (event_idx == 6) {
     // CARLTODO: HOW TO FIX THIS CASTLING BUG???????????????????!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -311,12 +337,7 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
     osSemaphoreRelease(checkDesktopAppErrSem);
     return;
 
-  } else if (prevArr && prevID == 5) {
-    prevID = 255;
-    prevArr = false;
-    memcpy(&game.previousStateChar[7][7], hUsbDeviceFS.pClassData, 1);
-    memset(hUsbDeviceFS.pClassData, 0, 64);
-  } else if (prevArr && prevID == 4) {
+  }  else if (prevArr && prevID == 4) {
     prevID = 255;
     prevArr = false;
     memcpy(&game.currentMove->lightState[7][7], hUsbDeviceFS.pClassData, 1);
