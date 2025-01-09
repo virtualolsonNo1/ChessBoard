@@ -40,11 +40,10 @@
 # USE CASE
 - Once finished, the chess board will function as follows:
     - Current functionality: 
-        - once plugged in, chess clock will turn on, displaying default time control of 1:00 for each player
+        - once plugged in, chess clock will turn on, displaying default time control of 1:00 for each player 
         - if either of two outside push buttons are pressed, it will start the opponents timer, signifying that the first player made their move then hit the button
+            - right now, black must first hit their button to start white's clock, should add functionality for either side to play as white later
         - if the middle button is pressed before the game starts it changes the time control. If the game has already started, it will reset the game so the players can start another one whenever they want
         - during this time, the chess clock display will properly display the time control chosen or each player's time if the game has already started
         - The hall effect data is stored in a buffer as well as the respective LED data to be sent to the LEDs, which can currently be sent out but has some hardware issues with 4 of the 8 rows
     - Yet to be added functionality: 
-        - after each change in the state of the board buffer of the hall data, this data will be sent over USB-C to a python app that will display the pieces place on the board and the engine evaluation of the position
-        - When a piece is picked up, it's potential squares to be moved to will be lit up by the LEDs
