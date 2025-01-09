@@ -17,13 +17,11 @@ extern struct GameState game;
 extern osMutexId_t checkCastleSem;
 extern struct ErrorMessage errorMessage;
 extern bool isErrorState;
-bool isEnPassant = false;
-bool moveIsCastling = false;
 extern bool desktopError;
 HIDClockModeReports lightReport;
-
+bool isEnPassant = false;
+bool moveIsCastling = false;
 bool waitForCastlingResponse;
-
 uint8_t lightsOffArr[8][8] = {0};
 extern TIM_HandleTypeDef htim3;
 bool startedPieceCheck = false;
@@ -36,7 +34,7 @@ void initTime(struct GameState* game) {
     max7219_PrintNtos(PLAYER2_SECONDS, game->player2->clock.seconds, 2);
 }
 
-void displayNoClock() {
+void displayNoClockBlack() {
     max7219_Decode_Off();
     // send blank for that digit
     max7219_SendData(DIGIT_1, 0x00);
@@ -48,6 +46,20 @@ void displayNoClock() {
     
     max7219_SendData(DIGIT_8, 0x76);
     max7219_SendData(DIGIT_6, 0x4E);
+}
+
+void displayNoClockWhite() {
+    max7219_Decode_Off();
+    // send blank for that digit
+    max7219_SendData(DIGIT_1, 0x0E);
+    max7219_SendData(DIGIT_2, 0x4E);
+    max7219_SendData(DIGIT_3, 0x7E);
+    max7219_SendData(DIGIT_4, 0x76);
+    max7219_SendData(DIGIT_5, 0x00);
+    max7219_SendData(DIGIT_7, 0x00);
+    
+    max7219_SendData(DIGIT_8, 0x00);
+    max7219_SendData(DIGIT_6, 0x00);
 }
 
 void changeTimeControl(struct GameState* game) {
@@ -113,7 +125,7 @@ void changeTimeControl(struct GameState* game) {
     HAL_TIM_Base_Init(game->player1->clock.timer);
     HAL_TIM_Base_Init(game->player2->clock.timer);
     if (game->timeControl == NO_CLOCK) {
-        displayNoClock();
+        displayNoClockBlack();
     } else {
         // TODO: CAN WE LEAVE THIS HERE AND KEEP IN OTHER SPOT????!!!!
         max7219_Decode_On();

@@ -187,6 +187,7 @@ void EXTI1_IRQHandler(void)
         game.isWhiteMove = true;
         game.gameStarted = true;
         if (game.timeControl == NO_CLOCK) {
+          displayNoClockWhite();
           return;
         }
         HAL_TIM_Base_Stop(&htim5);
@@ -248,6 +249,7 @@ void EXTI3_IRQHandler(void)
         game.gameStarted = true;
         memcpy(&game.previousState, &game.currentBoardState, 8 * 8 * sizeof(game.previousState[0][0]));
         if (game.timeControl == NO_CLOCK) {
+          displayNoClockWhite();
           return;
         }
         HAL_TIM_Base_Stop(&htim2);
