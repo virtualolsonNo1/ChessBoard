@@ -725,12 +725,8 @@ void blinkError(void *argument)
 
       }
       
-      if (count % 2 == 0) {
-        memset(blinkLightsArr, 1, 64);
-      } else {
         memset(blinkLightsArr, 0, 64);
-      }
-
+        
         // light up all pieces that are off board but need put back to get back to beginning of move
         bool arrsSame = true;
         for(int i = 0; i < 8; i++) {
@@ -738,16 +734,32 @@ void blinkError(void *argument)
             if (game.currentBoardState[i][j] != game.previousState[i][j]) {
               if (errorMessage.resetState == NO_PIECE_PICKUP) {
                 arrsSame = false;
-                blinkLightsArr[i][j] = 1;
+                // blinkLightsArr[i][j] = 1;
+
+                if (count % 2 == 0) {
+                  blinkLightsArr[i][j] = 1;
+                } else {
+                  blinkLightsArr[i][j] = 0;
+                }
               } else if (errorMessage.resetState == FIRST_PIECE_PICKUP && !(i == errorMessage.firstPickupRow && j == errorMessage.firstPickupCol)) {
                 if (!(game.currentMove->allPieceLights[i][j] == 1 && game.currentBoardState[i][j] == 1)) {
                 arrsSame = false;
-                blinkLightsArr[i][j] = 1;
+                if (count % 2 == 0) {
+                  blinkLightsArr[i][j] = 1;
+                } else {
+                  blinkLightsArr[i][j] = 0;
+                }
+                // blinkLightsArr[i][j] = 1;
                 }
               } else if (errorMessage.resetState == SECOND_PIECE_PICKUP && !(i == clockModeReport.firstPickupRow && j == clockModeReport.firstPickupCol) && !(i == clockModeReport.report2.secondPickupRow && j == clockModeReport.report2.secondPickupCol)) {
                 // TODO: SHOULD TWO LIGHTS FROM PICKUP BLINK OR INDICATE ANYTHING OR AT LEAST LIGHT UP WHEN 
                 arrsSame = false;
-                blinkLightsArr[i][j] = 1;
+                // blinkLightsArr[i][j] = 1;
+                if (count % 2 == 0) {
+                  blinkLightsArr[i][j] = 1;
+                } else {
+                  blinkLightsArr[i][j] = 0;
+                }
               }
             }
           }

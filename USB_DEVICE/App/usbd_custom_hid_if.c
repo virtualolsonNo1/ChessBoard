@@ -325,7 +325,8 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
   }  else if (event_idx == LIGHTS_DATA_REPORT_OUT) {
     uint8_t test[8] = {0};
     memcpy(test, hUsbDeviceFS.pClassData + 1, sizeof(test));
-    // TODO: CONVERT 8 byte array to 8x8 2d array
+
+    // convert 8 byte array to 8x8 2d array
     for(int i = 0; i < 8; i++) {
       game.currentMove->lightState[i][0] = (0b10000000 & test[i]) >> 7; 
       game.currentMove->lightState[i][1] = (0b01000000 & test[i]) >> 6; 
@@ -378,7 +379,6 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
     }
   }
   
-  volatile int x = 1;
   return (USBD_OK);
   /* USER CODE END 6 */
 }
