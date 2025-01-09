@@ -5,38 +5,36 @@
 # PERIPHERALS USED
 - In order to achieve this goal, hall effect sensors were used to capture data from magnetic pieces on the 64 squares. 
 - From there, shift registers are used to store the data and output it over a single serial wire using SPI, allowing for this data to be sent over USB-C (also how the board is powered) 
-    - Sadly, I forgot to include a 48Mhz crystal oscillator in my PCB design, so I'm in the process of adding one to my board without another board spin, after which I will be able to write a desktop app to take my buffer of hall effect sensor data and translate it to chess logic using python
+    - Sadly, I forgot to include a crystal oscillator in my PCB design so usb can be at 48MHz, so I'm in the process of adding one to my board without another board spin, but for now a baudge on my first board design adding that does the trick
 - Additionally, in order to make it an all inclusive experience, a chess clock was added, using 3 gpio pins and 3 push-buttons (one for each player after they move their piece, and a third to change the time control, reset the clock, etc)
+    - another button will have to be added as to allow for being able to choose a piece to promote to
 - Also, two general purpose timers as well as a 7-segment LCD display to show each player's time were used, of which their was already a library online to display on it, so pin-muxing for that SPI peripherals and converting gneeral purpose timer data to displayable data was almost all that had be done to get it working
 - finally the idea came up that when a piece is picked up to light up its possible moves, which prompted me to add 64 LEDs and another set of shift registers, this time serial in parallel out as opposed to parallel in serial out
+    - future board spin will use rgb LEDs that won't require extra shift registers but still work with SPI
 - Since at the time, I had been working with an stm32f411 microcontroller for my project at work, I used this same microcontroller for this project as to further learn
 - Similarly, this was first implemented using FreeRTOS, as I was comparing FreeRTOS and Zephyr for another work project on an NXP dev board when it comes to speed, ease of day-to-day coding, implementation differences (preemptive prioritization and time slicing vs tickless, event driven RTOS defaulting to cooperative threading), etc., which was very easy to add using ST's CubeMX tool, but was later removed as it was unnecessary for this bare metal project
-- switched from CDC to HID device with custom report descriptor
-- 
+    - I HATE st's version of freertos, it objectively sucks ass in every way imaginable, so I'll probably end up moving away from it eventually, but only if i have the motivation
+- switched from CDC to custom HID device with custom report descriptor
 
 # MY CODE VS LIBRARIES AND GENERATED CODE
 - STM32CubeMX was used for pin muxing and the initial setup of each peripheral, which is why any code between "//USER CODE END" and "//USER CODE BEGIN" is auto generated, and any code not put between the "//USER CODE BEGIN" and "//USER CODE END" comments will be removed if any updates are made on CubeMX and code is regenerated
 - Additionally, max7219.c and max7219.h were borrowed from tabur on github, with the only changes needed being the SPI peripheral and GPIO pin in the .h file in order to communicate with the 7-segment LCD I was using
+    - Also had to look through datasheet to add in extra letters to spell "nocl" for no clock mode
 - Other than this, I wrote all of the code used in this code base
 
 # REMAINING TODOs
-# THINGS TO TEST AT OFFICE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-- edge case lights second piece picked up (i.e. castling and en passant)
-- blinking error when bad second piece picked up, bad move played 
-
-# OTHER SHIT!
-- if pick up take piece that isn't allowed, blink error??????????????????????????????????????? SAME WITH PUT DOWN/on square for a second?????!!!!!!
 - Add in extra functionality
-    - FIX RESET BUG???????????????????????????!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        - i.e. if error on desktop app, weird firmware bug when reset??? Or whatever causes weird firmware bug that makes it so you have to restart chessbaord for it to work
-    - no clock mode and debouncing shit
+    - debouncing shit
     - increment clock mode???????????
     - no light mode???????????????????
     - fix having to auto queen
     - can play white as either side dynamically depending on which side of clock hit first
 - can play live games on lichess??????????!!!!!!!!!!!!!!!!!!!!!!!!!
+    - CoreXY with electromagnet
+    - Integrate with lichess on desktop app end
+    - Fancy ass algorithm to put pieces back on starting squares with least corexy movement possible
 - redo PCB and Design fancy shit???
-    - add crystal, maybe fix LED shift registers to match hall effect ones, actual decoupling caps, better mounting holes
+    - add crystal, two extra columns on each side for taken pieces, RGB LEDs, actual decoupling caps, better mounting holes
 
 
 # USE CASE
