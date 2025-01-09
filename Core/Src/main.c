@@ -26,9 +26,7 @@
 #include "game.h"
 #include "max7219.h"
 #include "stm32f4xx_hal.h"
-// #include "usbd_cdc.h"
 #include "usb_device.h"
-// #include "usbd_cdc_if.h"
 #include "usbd_def.h"
 #include "string.h"
 #include "usbd_customhid.h"
@@ -103,6 +101,16 @@ extern uint8_t lightsOffArr[8][8];
 extern bool isErrorState;
 extern bool desktopError;
 extern bool startedPieceCheck;
+uint8_t boardstate[8];
+uint8_t boardstateArr[8][8];
+uint8_t ledstate[8];
+struct Clock clock1;
+struct Clock clock2;
+struct Player player1;
+struct Player player2;
+struct MoveState currentMove;
+struct GameState game;
+HIDClockModeReports clockModeReport;
 
 /* USER CODE END PV */
 
@@ -125,20 +133,6 @@ void animateLights(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint8_t boardstate[8];
-uint8_t boardstateArr[8][8];
-uint8_t ledstate[8];
-struct Clock clock1;
-struct Clock clock2;
-struct Player player1;
-struct Player player2;
-struct MoveState currentMove;
-struct GameState game;
-// typedef struct report1 firstReport;
-// typedef struct report2 secondReport;
-HIDClockModeReports clockModeReport;
-
-
 void updateTimeOld() {
   //grab count value from CNT register of the active player's timer
     int count = game.activePlayer->clock.timer->Instance->CNT;
@@ -214,11 +208,6 @@ int main(void)
   MX_TIM5_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
-  //properly set up 7 segment LCD
-  max7219_Init(0xA);
-  max7219_Decode_On();
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
-
   animateLightsSem = osSemaphoreNew(1, 0, animateLightsSem);
   checkCastleSem = osSemaphoreNew(1, 0, checkCastleSem);
   checkDesktopAppErrSem = osSemaphoreNew(1, 0, checkDesktopAppErrSem);
@@ -231,7 +220,12 @@ int main(void)
       .mq_size = 0            // Size of queue data
   };
   errorQueueHandle = osMessageQueueNew(1, sizeof(struct ErrorMessage), &errorQueue_attributes);
-  //TODO: init SPI and make sure CLOCK TURNS ON!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1 
+
+  //properly set up 7 segment LCD
+  max7219_Init(0xA);
+  max7219_Decode_On();
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
+
   for(int i = 0; i < 8; i++) {
     ledstate[i] = 0xA2;
   }
@@ -284,14 +278,12 @@ int main(void)
   memcpy(game.previousStateChar, newGame, 8 * 8 * sizeof(newGame[0][0]));
 
 
-  // memcpy(&game.chessBoard, &newGame, 8 * 8 * sizeof(char));
   
   //display proper starting times for both players
   initTime(&game);
 
   int count = 0;
   lightsOff();
-    // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
 
   /* USER CODE END 2 */
 
@@ -663,21 +655,6 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void boardstateToLed() {
-  for(int i = 0; i < 8; i++) {
-    int ledtemp = 0;
-    int ledbit = 0x1;
-    int boardbit = 0x80;
-    for(int j = 0; j < 8; j++) {
-      if(boardbit & boardstate[i]) {
-        ledtemp |= ledbit;
-      }
-      boardbit = boardbit >> 1;
-      ledbit = ledbit << 1;
-    }
-    ledstate[i] = ledtemp;
-  }
-}
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_blinkError */
@@ -725,12 +702,8 @@ void blinkError(void *argument)
 
       }
       
-      if (count % 2 == 0) {
-        memset(blinkLightsArr, 1, 64);
-      } else {
         memset(blinkLightsArr, 0, 64);
-      }
-
+        
         // light up all pieces that are off board but need put back to get back to beginning of move
         bool arrsSame = true;
         for(int i = 0; i < 8; i++) {
@@ -738,16 +711,29 @@ void blinkError(void *argument)
             if (game.currentBoardState[i][j] != game.previousState[i][j]) {
               if (errorMessage.resetState == NO_PIECE_PICKUP) {
                 arrsSame = false;
-                blinkLightsArr[i][j] = 1;
+
+                if (count % 2 == 0) {
+                  blinkLightsArr[i][j] = 1;
+                } else {
+                  blinkLightsArr[i][j] = 0;
+                }
               } else if (errorMessage.resetState == FIRST_PIECE_PICKUP && !(i == errorMessage.firstPickupRow && j == errorMessage.firstPickupCol)) {
                 if (!(game.currentMove->allPieceLights[i][j] == 1 && game.currentBoardState[i][j] == 1)) {
                 arrsSame = false;
-                blinkLightsArr[i][j] = 1;
+                if (count % 2 == 0) {
+                  blinkLightsArr[i][j] = 1;
+                } else {
+                  blinkLightsArr[i][j] = 0;
+                }
                 }
               } else if (errorMessage.resetState == SECOND_PIECE_PICKUP && !(i == clockModeReport.firstPickupRow && j == clockModeReport.firstPickupCol) && !(i == clockModeReport.report2.secondPickupRow && j == clockModeReport.report2.secondPickupCol)) {
-                // TODO: SHOULD TWO LIGHTS FROM PICKUP BLINK OR INDICATE ANYTHING OR AT LEAST LIGHT UP WHEN 
+                // TODO: SHOULD TWO LIGHTS FROM PICKUP BLINK OR INDICATE ANYTHING, as rn if two pieces pick up and third picked up, just makes set down third and not all 3
                 arrsSame = false;
-                blinkLightsArr[i][j] = 1;
+                if (count % 2 == 0) {
+                  blinkLightsArr[i][j] = 1;
+                } else {
+                  blinkLightsArr[i][j] = 0;
+                }
               }
             }
           }
@@ -921,11 +907,17 @@ void updateMove(void *argument)
       game.isWhiteMove = true;
       HAL_TIM_Base_Stop(&htim5);
       HAL_TIM_Base_Start(&htim2);
+      if (game.timeControl == NO_CLOCK) {
+        displayNoClockWhite();
+      }
     } else {
         game.activePlayer = game.player2;
         game.isWhiteMove = false;
         HAL_TIM_Base_Stop(&htim2);
         HAL_TIM_Base_Start(&htim5);
+      if (game.timeControl == NO_CLOCK) {
+        displayNoClockBlack();
+      }
     }
     
     // reset clockModeReport and game's current move to prepare for next move

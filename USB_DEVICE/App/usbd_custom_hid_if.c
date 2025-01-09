@@ -168,7 +168,7 @@ __ALIGN_BEGIN static uint8_t CUSTOM_HID_ReportDesc_FS[USBD_CUSTOM_HID_REPORT_DES
   0x95, 0x08,        //   Report Count (8)
   0x09, 0x09,        //   Usage (0x09 - Light Status)
   0x91, 0x02,        //   Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
-  // Report ID 5: 64-byte array for letters/numbers (Output)
+  // Report ID 5: 32-byte array for letters/numbers (Output)
   0x85, 0x05,        //   Report ID (5)
   0x15, 0x00,        //   Logical Minimum (0 (two empty squares))
   0x25, 0xCB,        //   Logical Maximum (203 (11001011 for Black King and Black Queen next to each other))
@@ -325,7 +325,8 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
   }  else if (event_idx == LIGHTS_DATA_REPORT_OUT) {
     uint8_t test[8] = {0};
     memcpy(test, hUsbDeviceFS.pClassData + 1, sizeof(test));
-    // TODO: CONVERT 8 byte array to 8x8 2d array
+
+    // convert 8 byte array to 8x8 2d array
     for(int i = 0; i < 8; i++) {
       game.currentMove->lightState[i][0] = (0b10000000 & test[i]) >> 7; 
       game.currentMove->lightState[i][1] = (0b01000000 & test[i]) >> 6; 
@@ -378,7 +379,6 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
     }
   }
   
-  volatile int x = 1;
   return (USBD_OK);
   /* USER CODE END 6 */
 }
