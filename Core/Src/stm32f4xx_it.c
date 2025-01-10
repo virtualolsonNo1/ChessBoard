@@ -183,6 +183,7 @@ void EXTI1_IRQHandler(void)
     if(game.activePlayer == game.player2 || !game.gameStarted) {
       if(!game.gameStarted) {
         game.activePlayer = game.player1;
+        game.player1IsWhite = true;
         // ASSUMED NORMAL ORIENTATION
         game.isWhiteMove = true;
         game.gameStarted = true;
@@ -244,6 +245,7 @@ void EXTI3_IRQHandler(void)
       //since chess clock button pressed, change active player and start their clock
       if(!game.gameStarted) {
         game.activePlayer = game.player2;
+        game.player1IsWhite = false;
         //TODO: BACKWARDS BOARD, update later!!!!!!!
         game.isWhiteMove = true;
         game.gameStarted = true;

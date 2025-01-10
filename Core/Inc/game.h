@@ -100,6 +100,7 @@ struct GameState {
     struct Player* activePlayer;
     struct Player* player1;
     struct Player* player2;
+    bool player1IsWhite;
     bool gameStarted;
     AllowedTimes timeControl;
     bool resetNow;
@@ -107,11 +108,10 @@ struct GameState {
     struct MoveState* currentMove;
     uint8_t previousState[8][8];
     unsigned char previousStateChar[8][8];
-    //TODO: PROBABLY WANT TO ADD BACK FOR NO CLOCK MODE!!!
-    // char chessBoard[8][8];
     uint8_t currentBoardState[8][8];
 };
 
+void rotate8x8Array(uint8_t rotateArr[8][8]);
 void initTime(struct GameState* game);
 void changeTimeControl(struct GameState* game);
 void updateMoveShit(struct GameState* game);

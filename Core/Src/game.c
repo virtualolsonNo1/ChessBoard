@@ -26,6 +26,16 @@ uint8_t lightsOffArr[8][8] = {0};
 extern TIM_HandleTypeDef htim3;
 bool startedPieceCheck = false;
 
+// rotate 8 bit array around the center in case white is on other side of board
+void rotate8x8Array(uint8_t rotateArr[8][8]) {
+    uint8_t temp[8][8];
+    memcpy(temp, rotateArr, 64);
+    for(int i = 0; i < 8; i++) {
+      for(int j = 0; j < 8; j++) {
+        rotateArr[7 - i][7 - j] = temp[i][j];
+      }
+    }
+}
 void initTime(struct GameState* game) {
     //initialize the display with the starting time for both players
     max7219_PrintNtos(PLAYER1_MINUTES, game->player1->clock.minutes, 2);
@@ -740,6 +750,8 @@ void convert2DArrayToBitarray(const uint8_t input[8][8], uint8_t output[8]) {
 }
 
 void updateReceivedLights() {
+        if (game.gameStarted && !game.player1IsWhite)
+            rotate8x8Array(game.currentMove->allPieceLights);     
         game.currentMove->lightsOn = true;
         uint8_t lights[8];
         convert2DArrayToBitarray(game.currentMove->allPieceLights, lights);       
@@ -752,9 +764,16 @@ void updateReceivedLights() {
       while(!(GPIOA->ODR & GPIO_PIN_10)) {}
       HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
       while((GPIOA->ODR & GPIO_PIN_10)) {}
+      
+      
+        if (game.gameStarted && !game.player1IsWhite)
+            rotate8x8Array(game.currentMove->allPieceLights);     
 }
 
 void updateLights() {
+    if (game.gameStarted && !game.player1IsWhite)
+        rotate8x8Array(game.currentMove->lightState);     
+
     uint8_t eightBitLights[8];
     convert2DArrayToBitarray(game.currentMove->lightState, eightBitLights);       
 
@@ -766,6 +785,9 @@ void updateLights() {
     while(!(GPIOA->ODR & GPIO_PIN_10)) {}
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
     while((GPIOA->ODR & GPIO_PIN_10)) {}
+
+    if (game.gameStarted && !game.player1IsWhite)
+        rotate8x8Array(game.currentMove->lightState);     
 
     osDelay(5);
 }

@@ -338,6 +338,9 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
       game.currentMove->lightState[i][7] = (0b00000001 & test[i]) >> 0; 
     }
 
+    // if (game.gameStarted && !game.player1IsWhite)
+    //     rotate8x8Array(game.currentMove->lightState);     
+    
     memcpy(game.currentMove->allPieceLights, game.currentMove->lightState, 64);
     game.currentMove->receivedLightData = true;
     

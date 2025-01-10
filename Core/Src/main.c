@@ -273,7 +273,7 @@ int main(void)
       };
 
   //initialize game
-  game = (struct GameState){&player1, &player1, &player2, false, ONE_MINUTE_LIMIT, false, false, &currentMove};
+  game = (struct GameState){&player1, &player1, &player2, false, false, ONE_MINUTE_LIMIT, false, false, &currentMove};
   memcpy(game.previousState, previousState, 8 * 8 * sizeof(previousState[0][0]));
   memcpy(game.previousStateChar, newGame, 8 * 8 * sizeof(newGame[0][0]));
 
@@ -702,6 +702,10 @@ void blinkError(void *argument)
 
       }
       
+      // rotate array to match normal orientation if top is white
+      if (game.gameStarted && !game.player1IsWhite)
+        rotate8x8Array(game.currentBoardState);
+      
         memset(blinkLightsArr, 0, 64);
         
         // light up all pieces that are off board but need put back to get back to beginning of move
@@ -844,6 +848,10 @@ void updateMove(void *argument)
       game.currentBoardState[i][7] = (0b00000001 & ~boardstate[i]) >> 0; 
 
     }
+    
+    // rotate array to match normal orientation if top is white
+    if (game.gameStarted && !game.player1IsWhite)
+      rotate8x8Array(game.currentBoardState);
 
     if (game.gameStarted) {
       //calculate if move occurred and capture data related to said move
@@ -903,7 +911,11 @@ void updateMove(void *argument)
     
     // update who active player is and start/stop clock accordingly
     if (!game.isWhiteMove) {
-      game.activePlayer = game.player1;
+      if (game.player1IsWhite) {
+        game.activePlayer = game.player1;
+      } else {
+        game.activePlayer = game.player2;
+      }
       game.isWhiteMove = true;
       HAL_TIM_Base_Stop(&htim5);
       HAL_TIM_Base_Start(&htim2);
@@ -911,7 +923,11 @@ void updateMove(void *argument)
         displayNoClockWhite();
       }
     } else {
+      if (game.player1IsWhite) {
         game.activePlayer = game.player2;
+      } else {
+        game.activePlayer = game.player1;
+      }
         game.isWhiteMove = false;
         HAL_TIM_Base_Stop(&htim2);
         HAL_TIM_Base_Start(&htim5);
