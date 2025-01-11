@@ -80,7 +80,7 @@ struct MoveState {
     bool isFinalState;
     uint8_t allPieceLights[8][8];
     uint8_t lightState[8][8];
-    bool pieceNewSquare;
+    bool pieceNewSquare; //TODO: WAY OVERUSED RN, NEED TO CLEAN TF UP 
     uint8_t pieceNewRow;
     uint8_t pieceNewCol;
     uint8_t secondPieceNewRow;

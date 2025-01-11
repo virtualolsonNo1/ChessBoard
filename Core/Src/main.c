@@ -677,6 +677,17 @@ void blinkError(void *argument)
     int count = 0;
     bool inErrorState = true;
     while(inErrorState) {
+
+      // exit error state and reset board for new game if reset button hit during error
+      if (!game.gameStarted) {
+          game.currentMove->lightsOn = false;
+          isErrorState = false;
+          inErrorState = false;
+          lightsOff();
+          resetGame(&game);
+          osThreadResume(updateMoveTaskHandle);
+          break;
+      }
       
       //de-assert and re-assert load pin to load values into register's D flip flops
       HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
@@ -902,38 +913,61 @@ void updateMove(void *argument)
       isErrorState = false;
       game.currentMove->isFinalState = false;
       continue;
-      
     }
     // update previous state to that of current board
     memcpy(game.previousState, game.currentBoardState, 8 * 8 * sizeof(game.previousState[0][0]));
     memset(game.currentMove->allPieceLights, 0, 64);
     memset(game.currentMove->lightState, 0, 64);
     
-    // update who active player is and start/stop clock accordingly
+    // update who active player is and start/stop clock accordingly (or what is displayed for no clock mode)
     if (!game.isWhiteMove) {
       if (game.player1IsWhite) {
         game.activePlayer = game.player1;
+        if (game.timeControl != NO_CLOCK) {
+          HAL_TIM_Base_Stop(&htim5);
+          HAL_TIM_Base_Start(&htim2);
+        } else {
+          displayNoClockWhite();
+        }
       } else {
         game.activePlayer = game.player2;
+        if (game.timeControl != NO_CLOCK) {
+          HAL_TIM_Base_Stop(&htim2);
+          HAL_TIM_Base_Start(&htim5);
+        } else {
+          displayNoClockBlack();
+        }
       }
       game.isWhiteMove = true;
-      HAL_TIM_Base_Stop(&htim5);
-      HAL_TIM_Base_Start(&htim2);
-      if (game.timeControl == NO_CLOCK) {
-        displayNoClockWhite();
-      }
+      // if (game.timeControl == NO_CLOCK && game.activePlayer == game.player1) {
+      //   displayNoClockWhite();
+      // } else if (game.timeControl == NO_CLOCK && game.activePlayer == game.player2) {
+      //   displayNoClockBlack();
+      // }
     } else {
       if (game.player1IsWhite) {
         game.activePlayer = game.player2;
+        if (game.timeControl != NO_CLOCK) {
+          HAL_TIM_Base_Stop(&htim2);
+          HAL_TIM_Base_Start(&htim5);
+        } else {
+          displayNoClockBlack();
+        }
       } else {
         game.activePlayer = game.player1;
+        if (game.timeControl != NO_CLOCK) {
+          HAL_TIM_Base_Stop(&htim5);
+          HAL_TIM_Base_Start(&htim2);
+        } else {
+          displayNoClockWhite();
+        }
       }
         game.isWhiteMove = false;
-        HAL_TIM_Base_Stop(&htim2);
-        HAL_TIM_Base_Start(&htim5);
-      if (game.timeControl == NO_CLOCK) {
-        displayNoClockBlack();
-      }
+      // if (game.timeControl == NO_CLOCK && game.activePlayer == game.player1) {
+      //   displayNoClockWhite();
+      // } else if (game.timeControl == NO_CLOCK && game.activePlayer == game.player2) {
+      //   displayNoClockBlack();
+      // }
     }
     
     // reset clockModeReport and game's current move to prepare for next move

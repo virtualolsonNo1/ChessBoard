@@ -194,11 +194,7 @@ void EXTI1_IRQHandler(void)
         HAL_TIM_Base_Stop(&htim5);
         HAL_TIM_Base_Start(&htim2);
        } else if (!(game.timeControl == NO_CLOCK) && game.gameStarted && !game.currentMove->pickupState == NO_PIECE_PICKUP && !game.currentMove->isFinalState) {
-        // game.activePlayer = game.player1;
         game.currentMove->isFinalState = true;
-        // game.isWhiteMove = true;
-        // HAL_TIM_Base_Stop(&htim5);
-        // HAL_TIM_Base_Start(&htim2);
       }
     }
   /* USER CODE END EXTI1_IRQn 1 */
@@ -246,23 +242,18 @@ void EXTI3_IRQHandler(void)
       if(!game.gameStarted) {
         game.activePlayer = game.player2;
         game.player1IsWhite = false;
-        //TODO: BACKWARDS BOARD, update later!!!!!!!
         game.isWhiteMove = true;
         game.gameStarted = true;
         memcpy(&game.previousState, &game.currentBoardState, 8 * 8 * sizeof(game.previousState[0][0]));
         if (game.timeControl == NO_CLOCK) {
-          displayNoClockWhite();
+          displayNoClockBlack();
           return;
         }
         HAL_TIM_Base_Stop(&htim2);
         HAL_TIM_Base_Start(&htim5);
         return;
       } else if (!(game.timeControl == NO_CLOCK) && game.gameStarted && !game.currentMove->pickupState == NO_PIECE_PICKUP && !game.currentMove->isFinalState) {
-        // game.activePlayer = game.player2;
         game.currentMove->isFinalState = true;
-        // game.isWhiteMove = false;
-        // HAL_TIM_Base_Stop(&htim2);
-        // HAL_TIM_Base_Start(&htim5);
         return;
       }
     }

@@ -72,6 +72,20 @@ void displayNoClockWhite() {
     max7219_SendData(DIGIT_6, 0x00);
 }
 
+void displayNoClockBoth() {
+    max7219_Decode_Off();
+    // send blank for that digit
+    max7219_SendData(DIGIT_1, 0x0E);
+    max7219_SendData(DIGIT_2, 0x4E);
+    max7219_SendData(DIGIT_3, 0x7E);
+    max7219_SendData(DIGIT_4, 0x76);
+    max7219_SendData(DIGIT_5, 0x0E);
+    max7219_SendData(DIGIT_7, 0x7E);
+    
+    max7219_SendData(DIGIT_8, 0x76);
+    max7219_SendData(DIGIT_6, 0x4E);
+}
+
 void changeTimeControl(struct GameState* game) {
     //change current time control to next one in list of possible time controls
     switch(game->timeControl) {
@@ -135,7 +149,7 @@ void changeTimeControl(struct GameState* game) {
     HAL_TIM_Base_Init(game->player1->clock.timer);
     HAL_TIM_Base_Init(game->player2->clock.timer);
     if (game->timeControl == NO_CLOCK) {
-        displayNoClockBlack();
+        displayNoClockBoth();
     } else {
         // TODO: CAN WE LEAVE THIS HERE AND KEEP IN OTHER SPOT????!!!!
         max7219_Decode_On();
@@ -390,6 +404,8 @@ void updateMoveShit(struct GameState* game) {
                     game->currentMove->pickupState = NO_PIECE_PICKUP;
                     game->currentMove->receivedLightData = false;
                     game->currentMove->lightsOn = false;
+                    // TODO: REMOVE???? make sure pieceNewSquare is false for lights stuff
+                    game->currentMove->pieceNewSquare = false;
                     lightsOff();
                     return;
 
@@ -424,7 +440,7 @@ void updateMoveShit(struct GameState* game) {
                         
                         startedPieceCheck = false;
                     }
-                    game->currentMove->pieceNewSquare = true;
+                    // game->currentMove->pieceNewSquare = true;
                     game->currentMove->pieceNewRow = i;
                     game->currentMove->pieceNewCol = j;
                     memset(game->currentMove->lightState, 0, 64);
@@ -439,13 +455,14 @@ void updateMoveShit(struct GameState* game) {
                     // TODO: timer debouncing shit for another animation if piece slides and then picked up again if we want????????????????????????????!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 }
 
-            // if move is over by button press or timer
+            // if second piece picked up
             } else if (!game->currentMove->isFinalState && game->currentMove->pickupState == SECOND_PIECE_PICKUP) {
 
                 // if previous state is equal to current board state, go back to no piece pickup state
                 if (memcmp(game->previousState, game->currentBoardState, 64) == 0) {
                     isEnPassant = false;
                     moveIsCastling = false;
+                    // game->currentMove->pieceNewSquare = false;
 
                     // WHY KEEP ENTERING HERE AFTER BUTTON PRESS!!!!!!!
                     game->currentMove->pickupState = NO_PIECE_PICKUP;
@@ -461,7 +478,7 @@ void updateMoveShit(struct GameState* game) {
                 
                 // if check for piece on final square not started and second piece picked up is final square, start check for said square
                 if (!isEnPassant && !startedPieceCheck && game->timeControl == NO_CLOCK && game->currentBoardState[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 1 && ((!game->isWhiteMove && isupper(game->previousStateChar[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol])) || (game->isWhiteMove && islower(game->previousStateChar[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol])))) {
-                    game->currentMove->pieceNewSquare = true;
+                    // game->currentMove->pieceNewSquare = true;
                     game->currentMove->pieceNewRow = clockModeReport.report2.secondPickupRow;
                     game->currentMove->pieceNewCol = clockModeReport.report2.secondPickupCol;
                     NVIC_DisableIRQ(TIM3_IRQn);
@@ -480,7 +497,7 @@ void updateMoveShit(struct GameState* game) {
                     
                 // if check for piece on final square not started and first piece picked up is final square, start check for said square
                 } else if (!isEnPassant && !startedPieceCheck && game->timeControl == NO_CLOCK && game->currentBoardState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 1 && ((!game->isWhiteMove && isupper(game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol])) || (game->isWhiteMove && islower(game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol])))) {
-                    game->currentMove->pieceNewSquare = true;
+                    // game->currentMove->pieceNewSquare = true;
                     game->currentMove->pieceNewRow = clockModeReport.firstPickupRow;
                     game->currentMove->pieceNewCol = clockModeReport.firstPickupCol;
                     NVIC_DisableIRQ(TIM3_IRQn);
@@ -529,7 +546,7 @@ void updateMoveShit(struct GameState* game) {
                     
                     // if there are pieces on both castling final squares, start timer for checking they're there for 1 second
                     if (numPiecesOnLights == 2) {
-                        game->currentMove->pieceNewSquare = true;
+                        // game->currentMove->pieceNewSquare = true;
                         game->currentMove->pieceNewRow = firstLightRow;
                         game->currentMove->pieceNewCol = firstLightCol;
                         game->currentMove->secondPieceNewRow = secondLightRow;
@@ -556,7 +573,7 @@ void updateMoveShit(struct GameState* game) {
                     
                 // if en passant is move played by two pieces that were picked up, and a piece is on the final square for said move, start the timer
                 } else if (isEnPassant && !startedPieceCheck && game->timeControl  == NO_CLOCK && game->currentBoardState[game->currentMove->pieceNewRow][game->currentMove->pieceNewCol] == 1) {
-                    game->currentMove->pieceNewSquare = true;
+                    // game->currentMove->pieceNewSquare = true;
                     NVIC_DisableIRQ(TIM3_IRQn);
                     __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
                     // Enable the update interrupt
@@ -579,13 +596,12 @@ void updateMoveShit(struct GameState* game) {
                 }
 
 
-                
+            // if final state, check that valid move occurred and move to next 
             } else if(game->currentMove->isFinalState) {
-                // TODO ASAP!!!!!!!!!!!!!!!!!!! MAKE SURE WHEN TAKE THEY GO TO THAT SQUARE OR EN PASSANT, OTHERWISE ILLEGAL MOVE!!!!!!!!!!!!!!!!!!!
                 bool enteredOne = false;
                 // if it was a take, check to make sure piece was moved there
                 if (game->currentMove->pickupState == SECOND_PIECE_PICKUP) {
-                    game->currentMove->pieceNewSquare = false;
+                    // game->currentMove->pieceNewSquare = false;
 
                     // TODO: ADD CHECK TO MAKE SURE BOTH SPOTS AREN'T 1, OR NOT NECESSARY???????????????????????????????????????????
                     // if spot where first or second piece was picked up is a 1, then that's the final spot the piece was moved and it's probably valid as long as error handling is added
