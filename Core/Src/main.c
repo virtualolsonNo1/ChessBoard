@@ -766,6 +766,8 @@ void blinkError(void *argument)
           if (errorMessage.resetState == NO_PIECE_PICKUP || errorMessage.resetState == FIRST_PIECE_PICKUP || isEnPassant || moveIsCastling) {
             isEnPassant = false;
             moveIsCastling = false;
+            // need to set pieceNewSquare to false, otherwise, if it was true, won't light up squares first time picking up a piece after this
+            game.currentMove->pieceNewSquare = false;
             game.currentMove->pickupState = NO_PIECE_PICKUP;
             
           // if second piece pickup, and game back to all but those two down, light up just those two spots
