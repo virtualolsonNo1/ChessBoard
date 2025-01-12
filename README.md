@@ -2,6 +2,30 @@
 - The purpose of this project was initially a rather simple one: my friends and I play A TON of chess over the board, and wanted to have a way to evaluate and learn from games afterwards without writing down our moves as we play.
 - In order to do so, a board to store the chess moves and a way of viewing this data visually later (as well as a chess engine's evaluation of each position) was necessary 
 
+# USE CASE
+- Once finished, the chess board will function as follows:
+    - Current functionality: 
+        - once plugged in, chess clock will turn on, displaying default time control of 1:00 for each player 
+        - if either of two outside push buttons are pressed, it will start the opponents timer, signifying which side is white and that the first player must make their move then hit their button
+        - if the middle button is pressed before the game starts it changes the time control. If the game has already started, it will reset the game so the players can start another one whenever they want
+        - during this time, the chess clock display will properly display the time control chosen or each player's time if the game has already started
+        - before the game has started by a player starting white's clock, the piece starting squares where pieces aren't currently on will be lit up as to signify they're missing a piece
+        - Once game has started:
+            - first piece pickup:
+                - once a game has started, if a player's piece is picked up, all it's possible moves will light up, animating outward from the piece's current spot
+                - if a first piece that can be taken is picked up first, all pieces for the active player that can take it will have their squares light up
+                - one thing to note is that for castling, the square next to and two from the king will be lit up. If the king is moved to the square 2 away from it, in no clock mode a move will not be played till the rook is moved to its (lit up) final square, and in clock mode it will force you to put the king back and replay the move until you move both the king and rook to their respective casting squares properly
+                    - if the rook is moved to its "castling" square before picking up the king, in no clock mode it will play it as a rook move, so be careful in this scenario. In clock mode this isn't an issue, as as long as the clock button isn't hit till the full castling has been played (both king and rook moved), there won't be a problem
+            - second piece pickup:
+                - if a valid second pieced is picked up, only that square and the first (either taking or taken) piece's squares will be lit up
+                    - exceptions to this are en passant and castling. For en passant, only the starting and ending square for the piece that's doing the taking will be lit up. For castling, only the ending squares for the king and rook will be lit up
+        - if any piece is picked up that isn't allowed, pieces are accidentally knocked over, etc., board will enter an error state where the squares that the pieces need to be put back on to resume the normal game will blink on and off every half second until they're put back, after which the game will resume as before
+        - similarly, if pieces are randomly added back to the board and a move is attempted to be played, the board will force them to be taken back off to resume the current move properly once again
+        - In no clock mode, the side where "nocl" is displayed on the 7-segment LCD is whose move it is, and will change whenever a valid move is played for 1 second, after which it becomes the other player's turn and nocl is displayed for that other person
+        - after the game, once reset hit, chess.com analysis board will pop up on default browser showing the full game
+        
+    - Yet to be added functionality: 
+
 # PERIPHERALS USED
 - In order to achieve this goal, hall effect sensors were used to capture data from magnetic pieces on the 64 squares. 
 - From there, shift registers are used to store the data and output it over a single serial wire using SPI, allowing for this data to be sent over USB-C (also how the board is powered) 
@@ -81,27 +105,3 @@
     - Fancy ass algorithm to put pieces back on starting squares with least robot arm movement possible
 - redo PCB and Design fancy shit
     - add crystal, two extra columns on each side for taken pieces, RGB LEDs, actual decoupling caps, better mounting holes
-
-
-# USE CASE
-- Once finished, the chess board will function as follows:
-    - Current functionality: 
-        - once plugged in, chess clock will turn on, displaying default time control of 1:00 for each player 
-        - if either of two outside push buttons are pressed, it will start the opponents timer, signifying which side is white and that the first player must make their move then hit their button
-        - if the middle button is pressed before the game starts it changes the time control. If the game has already started, it will reset the game so the players can start another one whenever they want
-        - during this time, the chess clock display will properly display the time control chosen or each player's time if the game has already started
-        - Once game has started:
-            - first piece pickup:
-                - once a game has started, if a player's piece is picked up, all it's possible moves will light up, animating outward from the piece's current spot
-                - if a first piece that can be taken is picked up first, all pieces for the active player that can take it will have their squares light up
-                - one thing to note is that for castling, the square next to and two from the king will be lit up. If the king is moved to the square 2 away from it, in no clock mode a move will not be played till the rook is moved to its (lit up) final square, and in clock mode it will force you to put the king back and replay the move until you move both the king and rook to their respective casting squares properly
-                    - if the rook is moved to its "castling" square before picking up the king, in no clock mode it will play it as a rook move, so be careful in this scenario. In clock mode this isn't an issue, as as long as the clock button isn't hit till the full castling has been played (both king and rook moved), there won't be a problem
-            - second piece pickup:
-                - if a valid second pieced is picked up, only that square and the first (either taking or taken) piece's squares will be lit up
-                    - exceptions to this are en passant and castling. For en passant, only the starting and ending square for the piece that's doing the taking will be lit up. For castling, only the ending squares for the king and rook will be lit up
-        - if any piece is picked up that isn't allowed, pieces are accidentally knocked over, etc., board will enter an error state where the squares that the pieces need to be put back on to resume the normal game will blink on and off every half second until they're put back, after which the game will resume as before
-        - similarly, if pieces are randomly added back to the board and a move is attempted to be played, the board will force them to be taken back off to resume the current move properly once again
-        - In no clock mode, the side where "nocl" is displayed on the 7-segment LCD is whose move it is, and will change whenever a valid move is played for 1 second, after which it becomes the other player's turn and nocl is displayed for that other person
-        - after the game, once reset hit, chess.com analysis board will pop up on default browser showing the full game
-        
-    - Yet to be added functionality: 
