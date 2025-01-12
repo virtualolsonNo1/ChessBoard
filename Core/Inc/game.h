@@ -74,9 +74,9 @@ enum PickupState {
 
 struct MoveState {
     bool lightsOn;
-    bool receivedLightData;
-    enum PickupState pickupState;
-    bool firstPiecePlayersColor;
+    bool receivedLightData; // bool to keep track of if light data received from usb interrupt yet
+    enum PickupState pickupState; // current pickup state of the move
+    bool firstPiecePlayersColor; // if the first piece picked up is the active player's or the opponent's
     bool isFinalState;
     uint8_t allPieceLights[8][8];
     uint8_t lightState[8][8];

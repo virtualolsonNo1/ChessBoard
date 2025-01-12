@@ -30,6 +30,7 @@
         - continually loops, updating the hall effect sensor data and checking if a game is started or not. If it hasn't, makes sure pieces are on their starting squares. If a game has started, it calls updateMoveShit(), which is where all of the chess logic resides. updateMoveShit and a lot of the other important functionality is in game.c, with the necessary structs and other variables/shared functions declared in game.h
         - updateMoveShit(): 
             - keeps track of state of the current move (if a piece has been picked up/moved, if another piece has been picked up (i.e. if a piece is taken, castling, etc), and based on the lights, can determine if a valid move is being played once the final state is reached (i.e. if a player hits their chess clock button or if in no clock mode, a valid move is played))
+            - similarly, checkCastling() and checks for en passant are used within updateMoveShit
         - if the final state is reached (i.e. a move is trying to be played), some basic final checks are made, the active player is changed, and current move values are reset as to prepare for another move
             
     - updateTime()
@@ -47,7 +48,7 @@
         - for timers, used for both players' clocks as well as for the no clock mode, where instead of hitting button to signify move, timer used to check if piece on valid move square for a full second, after which the "finalState" bool will be true
     - usb hid report descriptor can be found at usbd_custom_hid_if.c
         - is probably best documented part of all this shit lol
-    - that same file holds the interrupt, which checks the kind of report, and from there acts accordingly depending on if it's light data, piece data for the state of the board in characters, an error, etc
+    - that same file holds the interrupt in CUSTOM_HID_OutEvent_FS(), which checks the kind of report, and from there acts accordingly depending on if it's light data, piece data for the state of the board in characters, an error, etc
 
 
 - other important variables/functions to know
@@ -59,7 +60,12 @@
         - allPieceLights contains not just current lights, but those for all of piece, so don't have to query desktop app again when piece is moved over valid potential squares. i.e. it is, for a large part, our "source of truth" for what is valid
     - game.currentMove->piecePickupState is an enum that's checked to determine if one piece, two pieces (for takes or castling), or no pieces have been picked up yet
     - final state is when player hits their button to signify playing a move, or if in no clock mode, a valid move is simply played for a second. Couldn't be in enum as need to be able to check if it is both the final state or not as well as the pickup state, hence a severe (and almost criminal) lack of switch statements
+    - helper functions such as rotate8x8Array(), convert2DArrayToBitarray(), resetNow(), changeTimeControl(), etc., are fairly self explanatory and do what they imply (transform arrays, reset the game, change the time control before the game, etc) 
+        - in particular, rotate8x8Array() is a recent addition allowing either side to play as white so one can exchange pieces when re-setting up the board after a game as opposed to having to physically rotate the whole board, so it's applied to the hall data as well as light data to make the data being input uniform so none of the chess-related logic has to change
         
+- One last SUPER important note:
+    - a lot of the chess related logic regarding possible moves (especially castling and en passant) for the pieces (either possible moves for the active player's pieces or the active player's pieces that can take the opponent's piece to light up), keeping track of the game as a whole (i.e. converting row/column data into smith notation moves, displaying the game on chess.com afterwards for analysis, etc) is done on the desktop app repo: https://github.com/virtualolsonNo1/ChessDesktopApp
+        - TODO: THESE NEED TO BE COMBINED INTO MONOREPO LATER, 2nd one maybe for PCB files
 
 
 # REMAINING TODOs
