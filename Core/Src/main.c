@@ -939,11 +939,6 @@ void updateMove(void *argument)
         }
       }
       game.isWhiteMove = true;
-      // if (game.timeControl == NO_CLOCK && game.activePlayer == game.player1) {
-      //   displayNoClockWhite();
-      // } else if (game.timeControl == NO_CLOCK && game.activePlayer == game.player2) {
-      //   displayNoClockBlack();
-      // }
     } else {
       if (game.player1IsWhite) {
         game.activePlayer = game.player2;
@@ -963,11 +958,6 @@ void updateMove(void *argument)
         }
       }
         game.isWhiteMove = false;
-      // if (game.timeControl == NO_CLOCK && game.activePlayer == game.player1) {
-      //   displayNoClockWhite();
-      // } else if (game.timeControl == NO_CLOCK && game.activePlayer == game.player2) {
-      //   displayNoClockBlack();
-      // }
     }
     
     // reset clockModeReport and game's current move to prepare for next move
@@ -979,6 +969,8 @@ void updateMove(void *argument)
       clockModeReport.report1.finalPickupCol = 8;
       
     }
+
+    // reset values associated with current move to prepare for next one
     game.currentMove->pickupState = NO_PIECE_PICKUP;
     game.currentMove->isFinalState = false;
     game.currentMove->lightsOn = false;
@@ -987,6 +979,7 @@ void updateMove(void *argument)
     isEnPassant = false;
     moveIsCastling = false;
     startedPieceCheck = false;
+    // turn off any lights currently on
     lightsOff();
     }
     osDelay(10);

@@ -311,7 +311,6 @@ void TIM3_IRQHandler(void)
   if (game.currentMove->pickupState == FIRST_PIECE_PICKUP && !isErrorState && game.previousState[game.currentMove->pieceNewRow][game.currentMove->pieceNewCol] == 0 && game.currentBoardState[game.currentMove->pieceNewRow][game.currentMove->pieceNewCol] == 1) {
     game.currentMove->isFinalState = true;
     
-  // TODO: WILL THIS WORK FOR EN PASSANT?????????????!!!!!!!!!!!!!!!!!
   } else if (!moveIsCastling && game.currentMove->pickupState == SECOND_PIECE_PICKUP && !isErrorState && game.currentBoardState[game.currentMove->pieceNewRow][game.currentMove->pieceNewCol] == 1) {
     game.currentMove->isFinalState = true;
   } else if (moveIsCastling && game.currentMove->pickupState == SECOND_PIECE_PICKUP && !isErrorState && game.currentBoardState[game.currentMove->pieceNewRow][game.currentMove->pieceNewCol] == 1 && game.currentBoardState[game.currentMove->secondPieceNewRow][game.currentMove->secondPieceNewCol] == 1) {

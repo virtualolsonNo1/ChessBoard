@@ -22,6 +22,46 @@
     - Also had to look through datasheet to add in extra letters to spell "nocl" for no clock mode
 - Other than this, I wrote all of the code used in this code base
 
+# code overview:
+- main(): 
+    - initializes necessary peripherals (primarily spi for the lights and hall sensors, another spi for the clock, gpio pins for the clock button inputs, and usb to communicate with the desktop app), initializes the game struct, and inits the clock 7-segment LCD display with initTime()
+- 4 main/important tasks:
+    - updateMove(): 
+        - continually loops, updating the hall effect sensor data and checking if a game is started or not. If it hasn't, makes sure pieces are on their starting squares. If a game has started, it calls updateMoveShit(), which is where all of the chess logic resides. updateMoveShit and a lot of the other important functionality is in game.c, with the necessary structs and other variables/shared functions declared in game.h
+        - updateMoveShit(): 
+            - keeps track of state of the current move (if a piece has been picked up/moved, if another piece has been picked up (i.e. if a piece is taken, castling, etc), and based on the lights, can determine if a valid move is being played once the final state is reached (i.e. if a player hits their chess clock button or if in no clock mode, a valid move is played))
+        - if the final state is reached (i.e. a move is trying to be played), some basic final checks are made, the active player is changed, and current move values are reset as to prepare for another move
+            
+    - updateTime()
+        - calls updateTimeOld() at the top of main, which in turn, based on who the active player is, changes the display according to their remaining time (and for some god forsaken reason resets the game as well if reset button hit :( )
+    - blinkError():
+        - if an error occurrs, I don't want the chess board to shit itself, rather I want it to force users to put the piece back on its initial valid square and continue on with the game in a valid fashion. Similarly, if pieces are accidentally knocked over, it'd suck if the game ended there
+        - that's where this function comes into play, which when an error occurrs, an error is sent to its queue, the updateMove() task is temporarily suspended till the error is resolved, and from there, this function checks the hall sensors, blinking where the error occurs until its resolved, and then resuming everything as normal
+    - animateLights():
+        - another glorified function wrapper as a task, also controlled by a semaphore. Because a blocking call on the main thread would halt any of my other stuff from running (i.e. checking if state of board has changed, etc), need a task to animate lights outward when piece first picked up, so all this does is move outward from the piece, checking if potential moves exist and after a delay, adding increasingly further moves to the things being lit up
+            - also needed to not use lightState, as this is, at times, our "source of truth" of what is considered legal/possible chess wise, so don't want animation to change that, or if another piece is picked up or the piece is moved, etc, don't want to continue animating
+        - FOR OTHER LIGHTS TURNING ON/OFF, it's almost always done by updateLights, which simply uses lightState to update the lights on the board, so you'll see this everywhere and it's even (probably badly :() called by lightsOff
+
+- interrupts
+    - used for timers, gpio inputs for buttons, and USB!!!!!
+        - for timers, used for both players' clocks as well as for the no clock mode, where instead of hitting button to signify move, timer used to check if piece on valid move square for a full second, after which the "finalState" bool will be true
+    - usb hid report descriptor can be found at usbd_custom_hid_if.c
+        - is probably best documented part of all this shit lol
+    - that same file holds the interrupt, which checks the kind of report, and from there acts accordingly depending on if it's light data, piece data for the state of the board in characters, an error, etc
+
+
+- other important variables/functions to know
+    - the overall structure is the game struct has the players, who is white, if the game has started, and the state of the board, as well as a move. 
+    - a move contains if the lights are on, if light data has been received, the pickup state, which player is white, and the row/column info
+        - game.h also has the time control info, clock info, player info, etc all outlined
+    - for USB, there's a lightReport struct that is a union containing the row and column values of piece(s) picked up as well as the reportID, which is important/necessary for usb hid stuff. all this is in usb.h
+    - game.currentMove->lightState is current state of the board in 8x8 fashion, with a 1 being light on and 0 off
+        - allPieceLights contains not just current lights, but those for all of piece, so don't have to query desktop app again when piece is moved over valid potential squares. i.e. it is, for a large part, our "source of truth" for what is valid
+    - game.currentMove->piecePickupState is an enum that's checked to determine if one piece, two pieces (for takes or castling), or no pieces have been picked up yet
+    - final state is when player hits their button to signify playing a move, or if in no clock mode, a valid move is simply played for a second. Couldn't be in enum as need to be able to check if it is both the final state or not as well as the pickup state, hence a severe (and almost criminal) lack of switch statements
+        
+
+
 # REMAINING TODOs
 - Add in extra functionality
     - debouncing shit
@@ -30,10 +70,10 @@
     - fix having to auto queen
     - can play white as either side dynamically depending on which side of clock hit first
 - can play live games on lichess??????????!!!!!!!!!!!!!!!!!!!!!!!!!
-    - CoreXY with electromagnet
+    - robot arm to move pieces
     - Integrate with lichess on desktop app end
-    - Fancy ass algorithm to put pieces back on starting squares with least corexy movement possible
-- redo PCB and Design fancy shit???
+    - Fancy ass algorithm to put pieces back on starting squares with least robot arm movement possible
+- redo PCB and Design fancy shit
     - add crystal, two extra columns on each side for taken pieces, RGB LEDs, actual decoupling caps, better mounting holes
 
 
@@ -41,7 +81,7 @@
 - Once finished, the chess board will function as follows:
     - Current functionality: 
         - once plugged in, chess clock will turn on, displaying default time control of 1:00 for each player 
-        - if either of two outside push buttons are pressed, it will start the opponents timer, signifying that the first player made their move then hit the button
+        - if either of two outside push buttons are pressed, it will start the opponents timer , signifying that the first player must make their move then hit their button
             - right now, black must first hit their button to start white's clock, should add functionality for either side to play as white later
         - if the middle button is pressed before the game starts it changes the time control. If the game has already started, it will reset the game so the players can start another one whenever they want
         - during this time, the chess clock display will properly display the time control chosen or each player's time if the game has already started
