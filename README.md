@@ -27,7 +27,7 @@
     - initializes necessary peripherals (primarily spi for the lights and hall sensors, another spi for the clock, gpio pins for the clock button inputs, and usb to communicate with the desktop app), initializes the game struct, and inits the clock 7-segment LCD display with initTime()
 - 4 main/important tasks:
     - updateMove(): 
-        - continually loops, updating the hall effect sensor data and checking if a game is started or not. If it hasn't, makes sure pieces are on their starting squares. If a game has started, it calls updateMoveShit(), which is where all of the chess logic resides. updateMoveShit and a lot of the other important functionality is in game.c, with the necessary structs and other variables/shared functions declared in game.h
+        - continually loops, updating the hall effect sensor data and checking if a game is started or not. If it hasn't, makes sure pieces are on their starting squares with checkStartingSquares. If a game has started, it calls updateMoveShit(), which is where all of the chess logic resides. updateMoveShit and a lot of the other important functionality is in game.c, with the necessary structs and other variables/shared functions declared in game.h
         - updateMoveShit(): 
             - keeps track of state of the current move (if a piece has been picked up/moved, if another piece has been picked up (i.e. if a piece is taken, castling, etc), and based on the lights, can determine if a valid move is being played once the final state is reached (i.e. if a player hits their chess clock button or if in no clock mode, a valid move is played))
             - similarly, checkCastling() and checks for en passant are used within updateMoveShit
@@ -52,8 +52,8 @@
 
 
 - other important variables/functions to know
-    - the overall structure is the game struct has the players, who is white, if the game has started, and the state of the board, as well as a move. 
-    - a move contains if the lights are on, if light data has been received, the pickup state, which player is white, and the row/column info
+    - the overall structure is the game struct has the players, who is white, if the game has started, and the state of the board, as well as a move struct. 
+    - a move contains if the lights are on, if light data has been received, the pickup state, which player is white, and the row/column info associated with said move
         - game.h also has the time control info, clock info, player info, etc all outlined
     - for USB, there's a lightReport struct that is a union containing the row and column values of piece(s) picked up as well as the reportID, which is important/necessary for usb hid stuff. all this is in usb.h
     - game.currentMove->lightState is current state of the board in 8x8 fashion, with a 1 being light on and 0 off
@@ -87,9 +87,21 @@
 - Once finished, the chess board will function as follows:
     - Current functionality: 
         - once plugged in, chess clock will turn on, displaying default time control of 1:00 for each player 
-        - if either of two outside push buttons are pressed, it will start the opponents timer , signifying that the first player must make their move then hit their button
-            - right now, black must first hit their button to start white's clock, should add functionality for either side to play as white later
+        - if either of two outside push buttons are pressed, it will start the opponents timer, signifying which side is white and that the first player must make their move then hit their button
         - if the middle button is pressed before the game starts it changes the time control. If the game has already started, it will reset the game so the players can start another one whenever they want
         - during this time, the chess clock display will properly display the time control chosen or each player's time if the game has already started
-        - The hall effect data is stored in a buffer as well as the respective LED data to be sent to the LEDs, which can currently be sent out but has some hardware issues with 4 of the 8 rows
+        - Once game has started:
+            - first piece pickup:
+                - once a game has started, if a player's piece is picked up, all it's possible moves will light up, animating outward from the piece's current spot
+                - if a first piece that can be taken is picked up first, all pieces for the active player that can take it will have their squares light up
+                - one thing to note is that for castling, the square next to and two from the king will be lit up. If the king is moved to the square 2 away from it, in no clock mode a move will not be played till the rook is moved to its (lit up) final square, and in clock mode it will force you to put the king back and replay the move until you move both the king and rook to their respective casting squares properly
+                    - if the rook is moved to its "castling" square before picking up the king, in no clock mode it will play it as a rook move, so be careful in this scenario. In clock mode this isn't an issue, as as long as the clock button isn't hit till the full castling has been played (both king and rook moved), there won't be a problem
+            - second piece pickup:
+                - if a valid second pieced is picked up, only that square and the first (either taking or taken) piece's squares will be lit up
+                    - exceptions to this are en passant and castling. For en passant, only the starting and ending square for the piece that's doing the taking will be lit up. For castling, only the ending squares for the king and rook will be lit up
+        - if any piece is picked up that isn't allowed, pieces are accidentally knocked over, etc., board will enter an error state where the squares that the pieces need to be put back on to resume the normal game will blink on and off every half second until they're put back, after which the game will resume as before
+        - similarly, if pieces are randomly added back to the board and a move is attempted to be played, the board will force them to be taken back off to resume the current move properly once again
+        - In no clock mode, the side where "nocl" is displayed on the 7-segment LCD is whose move it is, and will change whenever a valid move is played for 1 second, after which it becomes the other player's turn and nocl is displayed for that other person
+        - after the game, once reset hit, chess.com analysis board will pop up on default browser showing the full game
+        
     - Yet to be added functionality: 
