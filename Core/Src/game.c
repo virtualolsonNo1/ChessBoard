@@ -859,6 +859,9 @@ void animateInitialLights() {
             HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
             while((GPIOA->ODR & GPIO_PIN_10)) {}
 
+            if (game.gameStarted && !game.player1IsWhite)
+                rotate8x8Array(tempLights);     
+
             osDelay(5);
         } else {
             // if (game.currentMove->pickupState == NO_PIECE_PICKUP)
