@@ -10,6 +10,8 @@
         - if the middle button is pressed before the game starts it changes the time control. If the game has already started, it will reset the game so the players can start another one whenever they want
         - during this time, the chess clock display will properly display the time control chosen or each player's time if the game has already started
         - before the game has started by a player starting white's clock, the piece starting squares where pieces aren't currently on will be lit up as to signify they're missing a piece
+        - if buttons are hit to start opponent's clock (and signify game is starting), but pieces aren't on their proper starting squares, game will not start and it will stay in this pre-game state where the squares requiring pieces are lit up
+            - TODO: LIGHT UP IF ANY OTHER SQUARES ON BOARD ARE OCCUPIED THAT SHOULDN"T BE BEFORE THE GAME!!!
         - Once game has started:
             - first piece pickup:
                 - once a game has started, if a player's piece is picked up, all it's possible moves will light up, animating outward from the piece's current spot
@@ -22,7 +24,7 @@
         - if any piece is picked up that isn't allowed, pieces are accidentally knocked over, etc., board will enter an error state where the squares that the pieces need to be put back on to resume the normal game will blink on and off every half second until they're put back, after which the game will resume as before
         - similarly, if pieces are randomly added back to the board and a move is attempted to be played, the board will force them to be taken back off to resume the current move properly once again
         - In no clock mode, the side where "nocl" is displayed on the 7-segment LCD is whose move it is, and will change whenever a valid move is played for 1 second, after which it becomes the other player's turn and nocl is displayed for that other person
-        - after the game, once reset hit, chess.com analysis board will pop up on default browser showing the full game
+        - after the game, if checkmate, stalemate, insufficient material occurrs, or once reset button is hit, chess.com analysis board will pop up on default browser showing the full game and the board will go back into it's pre-game state of lighting up the squares that need pieces
         
     - Yet to be added functionality: 
 
