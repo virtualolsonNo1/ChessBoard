@@ -217,6 +217,7 @@ void resetGame(struct GameState* game) {
     game->currentMove->pickupState = NO_PIECE_PICKUP;
     game->currentMove->isFinalState = false;
     game->currentMove->pieceNewSquare = false;
+    game->piecesReady = false;
     
     return;
 }
@@ -883,6 +884,17 @@ void lightsOff() {
     updateLights();
 }
 
+uint8_t startingState[8][8] = {
+    {1, 1, 1, 1, 1, 1, 1, 1},
+    {1, 1, 1, 1, 1, 1, 1, 1},
+    {0, 0, 0, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0},
+    {1, 1, 1, 1, 1, 1, 1, 1},
+    {1, 1, 1, 1, 1, 1, 1, 1}
+};
+
 void checkStartingSquares() {
     bool lightsNeedUpdated = false;
     for(int i = 0; i < 2; i++) {
@@ -908,6 +920,13 @@ void checkStartingSquares() {
             }
 
         }
+    }
+    
+    // check to see if pieces all in starting squares, updating piecesReady accordingly
+    if (memcmp(game.currentBoardState, startingState, 64) == 0) {
+        game.piecesReady = true;
+    } else {
+        game.piecesReady = false;
     }
     
     if (lightsNeedUpdated) {

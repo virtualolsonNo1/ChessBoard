@@ -101,6 +101,7 @@ struct GameState {
     struct Player* player1;
     struct Player* player2;
     bool player1IsWhite;
+    bool piecesReady; // if pieces are in correct spots to start game
     bool gameStarted;
     AllowedTimes timeControl;
     bool resetNow;

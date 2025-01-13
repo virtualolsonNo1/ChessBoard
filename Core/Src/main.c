@@ -273,7 +273,7 @@ int main(void)
       };
 
   //initialize game
-  game = (struct GameState){&player1, &player1, &player2, false, false, ONE_MINUTE_LIMIT, false, false, &currentMove};
+  game = (struct GameState){&player1, &player1, &player2, false, false, false, ONE_MINUTE_LIMIT, false, false, &currentMove};
   memcpy(game.previousState, previousState, 8 * 8 * sizeof(previousState[0][0]));
   memcpy(game.previousStateChar, newGame, 8 * 8 * sizeof(newGame[0][0]));
 
@@ -811,6 +811,11 @@ void updateTime(void *argument)
   for(;;)
   {
     if (game.timeControl == NO_CLOCK) {
+      // if game needs reset, need to explicitly check in no clock mode since normal check is in updateTimeOld
+      if (game.resetNow) {
+        game.resetNow = false;
+        resetGame(&game);
+      }
       osDelay(1);
       continue;
     }

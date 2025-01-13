@@ -179,9 +179,9 @@ void EXTI1_IRQHandler(void)
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_1);
   /* USER CODE BEGIN EXTI1_IRQn 1 */
 
-    //since chess clock button pressed, change active player and start their clock
     if(game.activePlayer == game.player2 || !game.gameStarted) {
-      if(!game.gameStarted) {
+      // if game hasn't started and pieces are ready when button hit, start the game and the active player's respective clock
+      if(!game.gameStarted && game.piecesReady) {
         game.activePlayer = game.player1;
         game.player1IsWhite = true;
         // ASSUMED NORMAL ORIENTATION
@@ -193,6 +193,7 @@ void EXTI1_IRQHandler(void)
         }
         HAL_TIM_Base_Stop(&htim5);
         HAL_TIM_Base_Start(&htim2);
+       // if time control isn't no clock and button hit when potential move played, set isFinalState to true
        } else if (!(game.timeControl == NO_CLOCK) && game.gameStarted && !game.currentMove->pickupState == NO_PIECE_PICKUP && !game.currentMove->isFinalState) {
         game.currentMove->isFinalState = true;
       }
@@ -238,8 +239,8 @@ void EXTI3_IRQHandler(void)
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_3);
   /* USER CODE BEGIN EXTI3_IRQn 1 */
     if(game.activePlayer == game.player1 || !game.gameStarted) {
-      //since chess clock button pressed, change active player and start their clock
-      if(!game.gameStarted) {
+      // if game hasn't started and pieces are ready when button hit, start the game and the active player's respective clock
+      if(!game.gameStarted && game.piecesReady) {
         game.activePlayer = game.player2;
         game.player1IsWhite = false;
         game.isWhiteMove = true;
@@ -251,10 +252,9 @@ void EXTI3_IRQHandler(void)
         }
         HAL_TIM_Base_Stop(&htim2);
         HAL_TIM_Base_Start(&htim5);
-        return;
+       // if time control isn't no clock and button hit when potential move played, set isFinalState to true
       } else if (!(game.timeControl == NO_CLOCK) && game.gameStarted && !game.currentMove->pickupState == NO_PIECE_PICKUP && !game.currentMove->isFinalState) {
         game.currentMove->isFinalState = true;
-        return;
       }
     }
 

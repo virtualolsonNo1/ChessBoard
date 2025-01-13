@@ -36,6 +36,8 @@ extern osThreadId_t updateMoveTaskHandle;
 extern osMessageQueueId_t errorQueueHandle;
 extern struct ErrorMessage errorMessage;
 extern bool waitForCastlingResponse;
+extern TIM_HandleTypeDef htim2;
+extern TIM_HandleTypeDef htim5;
 bool isErrorState = false;
 bool desktopError = false;
 /* USER CODE END INCLUDE */
@@ -312,12 +314,40 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
   // if error received from desktop app, replay the move as button hit too early or for wrong move DESPITE ALL THAT ERROR HANDLING cause people are dumb ig
   } else if (event_idx == ERROR_REPORT_OUT) {
     uint8_t errorStatus;
-    // TODO: THIS ISN"T USED RN, BUT MAYBE SEND ERROR CODE LATER WITH INFO ON WHAT IT WAS ON DESKTOP END!!!!!!!!!!!!
     memcpy(&errorStatus, hUsbDeviceFS.pClassData + 1, 1);
+    // check if error or checkmate occurred
+    if (errorStatus == 255) {
     isErrorState = true;
     errorMessage.numPieces = 1;
     errorMessage.resetState = NO_PIECE_PICKUP;
     desktopError = true;
+    return;
+    // TODO: UNTESTED FOR STALEMATE BUT TESTED FOR CHECKMATE AND INSUFFICIENT MATERIAL!!!!!!!!!!!!!!!!!!!!
+    // white checkmate
+    } else if (errorStatus == 1) {
+    HAL_TIM_Base_Stop(&htim2);
+    HAL_TIM_Base_Stop(&htim5);
+    game.gameStarted = false;
+    game.resetNow = true;
+
+    // black checkmate
+    } else if (errorStatus == 2) {
+    HAL_TIM_Base_Stop(&htim2);
+    HAL_TIM_Base_Stop(&htim5);
+    game.gameStarted = false;
+    game.resetNow = true;
+
+    // stalemate or insufficient material
+    } else if (errorStatus == 3) {
+    HAL_TIM_Base_Stop(&htim2);
+    HAL_TIM_Base_Stop(&htim5);
+    game.gameStarted = false;
+    game.resetNow = true;
+
+    } else {
+      // TODO: ERROR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      volatile int x = 1;
+    }
     osSemaphoreRelease(checkDesktopAppErrSem);
     return;
 
