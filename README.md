@@ -25,6 +25,7 @@
         - similarly, if pieces are randomly added back to the board and a move is attempted to be played, the board will force them to be taken back off to resume the current move properly once again
         - In no clock mode, the side where "nocl" is displayed on the 7-segment LCD is whose move it is, and will change whenever a valid move is played for 1 second, after which it becomes the other player's turn and nocl is displayed for that other person
         - after the game, if checkmate, stalemate, insufficient material occurrs, or once reset button is hit, chess.com analysis board will pop up on default browser showing the full game and the board will go back into it's pre-game state of lighting up the squares that need pieces
+            - will reset back to the time control of the previous game, allowing them to easily play another one without having to navigate back to preferred time control
         
     - Yet to be added functionality: 
 

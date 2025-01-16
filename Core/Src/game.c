@@ -954,6 +954,7 @@ uint8_t startingState[8][8] = {
 
 void checkStartingSquares() {
     // TODO: FOR SOME REASON NEED THIS OTHERWISE AFTER RESET, IT"LL TURN OFF LIGHTS TOO EARLY AND TURN THEM OFF INITIALLY TILL CHANGE MADE TO STARTING ROWS
+    // Brief delay to yield execution, ensuring reset operations complete first
     osDelay(5);
     bool lightsNeedUpdated = false;
     for(int i = 0; i < 2; i++) {
