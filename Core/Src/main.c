@@ -134,6 +134,11 @@ void animateLights(void *argument);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 void updateTimeOld() {
+    // check for reset right off the bat
+    if (game.resetNow) {
+        game.resetNow = false;
+        resetGame(&game);
+    }
   //grab count value from CNT register of the active player's timer
     int count = game.activePlayer->clock.timer->Instance->CNT;
 
@@ -162,13 +167,6 @@ void updateTimeOld() {
         max7219_PrintNtos(secondsReg, secondsRemaining, 2);
     } 
 
-    //if the game needs reset, properly do so
-    //TODO: this makes no logical sense to have in time shit, move to better spot later!!!!!!!
-    if (game.resetNow) {
-        game.resetNow = false;
-        resetGame(&game);
-        initTime(&game);
-    }
 }
 
 /* USER CODE END 0 */

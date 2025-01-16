@@ -10,6 +10,8 @@
 #include <ctype.h>
 
 
+extern TIM_HandleTypeDef htim2;
+extern TIM_HandleTypeDef htim5;
 extern HIDClockModeReports clockModeReport;
 extern USBD_HandleTypeDef hUsbDeviceFS;
 extern SPI_HandleTypeDef hspi1;
@@ -161,13 +163,62 @@ int minutes;
 int secondsRemaining;
 
 void resetGame(struct GameState* game) {
-    //TODO: reset game to previous time control
-    //reset state of game's different fields
-    game->timeControl = ONE_MINUTE_LIMIT;
-    game->player1->clock.minutes = 1;
-    game->player1->clock.seconds = 0;
-    game->player2->clock.minutes = 1;
-    game->player2->clock.seconds = 0;
+    // reset game to previous time control
+    switch(game->timeControl) {
+        case ONE_MINUTE_LIMIT:
+            game->player1->clock.minutes = ONE_MIN;
+            game->player1->clock.seconds = 0;
+            game->player2->clock.minutes = ONE_MIN;
+            game->player2->clock.seconds = 0;
+            break;
+        case TWO_MINUTE_LIMIT:
+            game->player1->clock.minutes = TWO_MIN;
+            game->player1->clock.seconds = 0;
+            game->player2->clock.minutes = TWO_MIN;
+            game->player2->clock.seconds = 0;
+            break;
+        case THREE_MINUTE_LIMIT:
+            game->player1->clock.minutes = THREE_MIN;
+            game->player1->clock.seconds = 0;
+            game->player2->clock.minutes = THREE_MIN;
+            game->player2->clock.seconds = 0;
+            break;
+        case FIVE_MINUTE_LIMIT:
+            game->player1->clock.minutes = FIVE_MIN;
+            game->player1->clock.seconds = 0;
+            game->player2->clock.minutes = FIVE_MIN;
+            game->player2->clock.seconds = 0;
+            break;
+        case TEN_MINUTE_LIMIT:
+            game->player1->clock.minutes = TEN_MIN;
+            game->player1->clock.seconds = 0;
+            game->player2->clock.minutes = TEN_MIN;
+            game->player2->clock.seconds = 0;
+            break;
+        case THIRTY_MINUTE_LIMIT:
+            game->player1->clock.minutes = THIRTY_MIN;
+            game->player1->clock.seconds = 0;
+            game->player2->clock.minutes = THIRTY_MIN;
+            game->player2->clock.seconds = 0;
+            break;
+        case HOUR_LIMIT:
+            game->player1->clock.minutes = HOUR;
+            game->player1->clock.seconds = 0;
+            game->player2->clock.minutes = HOUR;
+            game->player2->clock.seconds = 0;
+            break;
+        case NO_CLOCK:
+            break;
+    }
+    // if time control is no clock, update display accordingly, otherwise show time control reset to starting time for each player
+    if (game->timeControl == NO_CLOCK) {
+        osDelay(5);
+        displayNoClockBoth();
+    } else {
+        osDelay(5);
+        max7219_Decode_On();
+        initTime(game);
+    }
     game->gameStarted = false;
     game->isWhiteMove = true;
 
@@ -208,11 +259,17 @@ void resetGame(struct GameState* game) {
     __HAL_TIM_SET_AUTORELOAD(game->player2->clock.timer, game->timeControl);
     HAL_TIM_Base_Init(game->player1->clock.timer);
     HAL_TIM_Base_Init(game->player2->clock.timer);
+
+    // TODO: WEIRD SHIT OCCURRS IN RESET GAME WHERE DELAYS NEEDED OR ELSE IT"LL KEEP GOING, ETC!!!!!!!!!!
+    // stop players' clocks 
+    HAL_TIM_Base_Stop(&htim2);
+    HAL_TIM_Base_Stop(&htim5);
     
     // send reset game report to desktop app
     clockModeReport.reportId = 3;
     clockModeReport.report3.reset = 255;
     USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint32_t*)&clockModeReport, 2);
+    // osDelay(5);
     lightsOff();
     game->currentMove->pickupState = NO_PIECE_PICKUP;
     game->currentMove->isFinalState = false;
@@ -896,6 +953,8 @@ uint8_t startingState[8][8] = {
 };
 
 void checkStartingSquares() {
+    // TODO: FOR SOME REASON NEED THIS OTHERWISE AFTER RESET, IT"LL TURN OFF LIGHTS TOO EARLY AND TURN THEM OFF INITIALLY TILL CHANGE MADE TO STARTING ROWS
+    osDelay(5);
     bool lightsNeedUpdated = false;
     for(int i = 0; i < 2; i++) {
         for(int j = 0; j < 8; j++) {

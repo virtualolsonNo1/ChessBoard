@@ -273,9 +273,6 @@ void convert1DArrayTo2DArray(uint8_t *input, uint8_t output[8][8]) {
 }
 
 
-uint8_t prevID = 255;
-bool prevArr = false;
-uint8_t receivedData[64];
 
 /**
   * @brief  Manage the CUSTOM HID class events
@@ -322,30 +319,21 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
     errorMessage.resetState = NO_PIECE_PICKUP;
     desktopError = true;
     return;
-    // TODO: UNTESTED FOR STALEMATE BUT TESTED FOR CHECKMATE AND INSUFFICIENT MATERIAL!!!!!!!!!!!!!!!!!!!!
+
     // white checkmate
     } else if (errorStatus == 1) {
-    HAL_TIM_Base_Stop(&htim2);
-    HAL_TIM_Base_Stop(&htim5);
-    game.gameStarted = false;
     game.resetNow = true;
 
     // black checkmate
     } else if (errorStatus == 2) {
-    HAL_TIM_Base_Stop(&htim2);
-    HAL_TIM_Base_Stop(&htim5);
-    game.gameStarted = false;
     game.resetNow = true;
 
     // stalemate or insufficient material
     } else if (errorStatus == 3) {
-    HAL_TIM_Base_Stop(&htim2);
-    HAL_TIM_Base_Stop(&htim5);
-    game.gameStarted = false;
     game.resetNow = true;
 
     } else {
-      // TODO: ERROR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      // ERROR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       volatile int x = 1;
     }
     osSemaphoreRelease(checkDesktopAppErrSem);
@@ -368,9 +356,6 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
       game.currentMove->lightState[i][7] = (0b00000001 & test[i]) >> 0; 
     }
 
-    // if (game.gameStarted && !game.player1IsWhite)
-    //     rotate8x8Array(game.currentMove->lightState);     
-    
     memcpy(game.currentMove->allPieceLights, game.currentMove->lightState, 64);
     game.currentMove->receivedLightData = true;
     
