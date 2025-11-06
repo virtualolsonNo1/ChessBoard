@@ -31,7 +31,6 @@
 #include "string.h"
 #include "usbd_customhid.h"
 #include "usb.h"
-#include "test.h"
 
 /* USER CODE END Includes */
 
@@ -280,7 +279,6 @@ int main(void)
   //display proper starting times for both players
   initTime(&game);
 
-  int count = 0;
   lightsOff();
 
   /* USER CODE END 2 */
@@ -712,10 +710,11 @@ void blinkError(void *argument)
       }
       
       // rotate array to match normal orientation if top is white
-      if (game.gameStarted && !game.player1IsWhite)
+      if (game.gameStarted && !game.player1IsWhite) {
         rotate8x8Array(game.currentBoardState);
+      }
       
-        memset(blinkLightsArr, 0, 64);
+      memset(blinkLightsArr, 0, 64);
         
         // light up all pieces that are off board but need put back to get back to beginning of move
         bool arrsSame = true;
@@ -789,7 +788,7 @@ void blinkError(void *argument)
           osDelay(500);
         }
       
-    osDelay(1);
+      osDelay(1);
     }
   }
   /* USER CODE END 5 */
@@ -838,9 +837,10 @@ void updateMove(void *argument)
   {
     if (isErrorState && !game.currentMove->isFinalState) {
       // notify error queue with proper error message and suspend current task
-      osMessageQueuePut(errorQueueHandle, &errorMessage, NULL, osWaitForever);
+      osMessageQueuePut(errorQueueHandle, &errorMessage, (int)NULL, osWaitForever);
       osThreadSuspend(updateMoveTaskHandle);
     }
+    
     //de-assert and re-assert load pin to load values into register's D flip flops
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
     osDelay(1);
@@ -886,7 +886,7 @@ void updateMove(void *argument)
         if (game.currentMove->pickupState == SECOND_PIECE_PICKUP) {
           
           clockModeReport.reportId = 2;
-          USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 7);
+          USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint8_t*)&clockModeReport, 7);
           USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS);
           
           // wait for response from desktop app if there was an error or not
@@ -896,7 +896,7 @@ void updateMove(void *argument)
         } else {
           clockModeReport.reportId = 1;
 
-          USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint32_t*)&clockModeReport, 5);
+          USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint8_t*)&clockModeReport, 5);
           USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS);
           // wait for response from desktop app if there was an error or not
           osDelay(5);
@@ -912,7 +912,7 @@ void updateMove(void *argument)
       }
       
       // notify error queue with proper error message and suspend current task
-      osMessageQueuePut(errorQueueHandle, (const void *)&errorMessage, NULL, osWaitForever);
+      osMessageQueuePut(errorQueueHandle, (const void *)&errorMessage, (int)NULL, osWaitForever);
       osThreadSuspend(updateMoveTaskHandle);
       osDelay(1);
       isErrorState = false;

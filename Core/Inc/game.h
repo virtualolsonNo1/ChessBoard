@@ -122,3 +122,5 @@ void updateLights();
 void animateInitialLights();
 void lightsOff();
 void checkStartingSquares();
+void displayNoClockBlack();
+void displayNoClockWhite();

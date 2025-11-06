@@ -2,7 +2,7 @@
 #include "game.h"
 #include "max7219.h"
 #include "stm32f4xx_hal_tim.h"
-#include "string.h"
+#include <string.h>
 #include "usb.h"
 #include "usbd_def.h"
 #include "usbd_customhid.h"
@@ -268,7 +268,7 @@ void resetGame(struct GameState* game) {
     // send reset game report to desktop app
     clockModeReport.reportId = 3;
     clockModeReport.report3.reset = 255;
-    USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint32_t*)&clockModeReport, 2);
+    USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint8_t*)&clockModeReport, 2);
     // osDelay(5);
     lightsOff();
     game->currentMove->pickupState = NO_PIECE_PICKUP;
@@ -302,7 +302,7 @@ bool checkCastling() {
         waitForCastlingResponse = true;
         lightReport.reportId = 3;
         lightReport.report3.reset = clockModeReport.report2.secondPickupRow << 3 | clockModeReport.report2.secondPickupCol;
-        USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint32_t*)&lightReport, 2);
+        USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint8_t*)&lightReport, 2);
         osSemaphoreAcquire(checkCastleSem, osWaitForever);
         // USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS);
         waitForCastlingResponse = false;
@@ -344,14 +344,14 @@ void updateMoveShit(struct GameState* game) {
                         game->currentMove->firstPiecePlayersColor = true;
                         lightReport.reportId = 3;
                         lightReport.report3.reset = i << 3 | j;
-                        USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint32_t*)&lightReport, 2);
+                        USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint8_t*)&lightReport, 2);
                         USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS);
                         
                     } else {
                         game->currentMove->firstPiecePlayersColor = false;
                         lightReport.reportId = 3;
                         lightReport.report3.reset = i << 3 | j;
-                        USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint32_t*)&lightReport, 2);
+                        USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint8_t*)&lightReport, 2);
                         USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS);
                     }
                     return;
@@ -455,6 +455,7 @@ void updateMoveShit(struct GameState* game) {
                     }
 
                 // if first piece picked up is put back on starting square, turn off lights and reset pickup state accordingly
+                // CARLTODO: ADD IN LOGIC TO SEND THIS INFO TO FRONTEND!!!!!!!!!!!!!!!!!
                 } else if (game->currentBoardState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 1) {
                     startedPieceCheck = false;
                     game->currentMove->pickupState = NO_PIECE_PICKUP;
@@ -722,7 +723,7 @@ void updateMoveShit(struct GameState* game) {
                         // if more than two differences, enter error state accordingly
                         } else if (!isErrorState) {
                         uint8_t errorStatus;
-                        memcpy(&errorStatus, hUsbDeviceFS.pClassData + 1, sizeof(1));
+                        memcpy(&errorStatus, hUsbDeviceFS.pClassData + 1, 1);
                         isErrorState = true;
                         errorMessage.numPieces = 1;
                         desktopError = true;
@@ -733,7 +734,7 @@ void updateMoveShit(struct GameState* game) {
                     // if it's not en passant or castling and nothing is on the first and second pickup squares, need to error out
                     } else if (!isErrorState && !isEnPassant && !moveIsCastling && game->currentBoardState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 0 && game->currentBoardState[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 0) {
                         uint8_t errorStatus;
-                        memcpy(&errorStatus, hUsbDeviceFS.pClassData + 1, sizeof(1));
+                        memcpy(&errorStatus, hUsbDeviceFS.pClassData + 1, 1);
                         isErrorState = true;
                         errorMessage.numPieces = 1;
                         desktopError = true;

@@ -24,6 +24,7 @@
 /* USER CODE BEGIN Includes */
 #include "game.h"
 #include "stm32f4xx.h"
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/

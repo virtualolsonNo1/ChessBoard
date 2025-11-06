@@ -318,7 +318,7 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
     errorMessage.numPieces = 1;
     errorMessage.resetState = NO_PIECE_PICKUP;
     desktopError = true;
-    return;
+    return 0;
 
     // white checkmate
     } else if (errorStatus == 1) {
@@ -337,7 +337,7 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
       volatile int x = 1;
     }
     osSemaphoreRelease(checkDesktopAppErrSem);
-    return;
+    return 0;
 
   // if the report ID is 4 for lights data, convert from 8 byte array to 8x8 2D array and make sure there are possible moves for the piece
   }  else if (event_idx == LIGHTS_DATA_REPORT_OUT) {
@@ -381,12 +381,12 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t event_idx, uint8_t state)
       errorMessage.firstPickupCol = clockModeReport.firstPickupCol;
       if (waitForCastlingResponse) {
         osSemaphoreRelease(checkCastleSem);
-        return;
+        return 0;
       }
     } else {
       if (waitForCastlingResponse) {
         osSemaphoreRelease(checkCastleSem);
-        return;
+        return 0;
       }
       // if received light data and it's the player's peice that was picked up, if it's not a knight animate lights, otherwise just light up squares that can take piece or squares for a knight's moves
       if (game.currentMove->firstPiecePlayersColor && game.previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] != 'n' && game.previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] != 'N') {

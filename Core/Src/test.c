@@ -23,7 +23,7 @@ clockModeReport.firstPickupCol = 4;
 clockModeReport.report1.finalPickupRow = 4;
 clockModeReport.report1.finalPickupCol = 4;
 // memcpy(clockModeReport.secondPickupState, arr2, 8 * 8 * sizeof(arr2[0][0]));
-USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint32_t*)&clockModeReport, 5);
+USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint8_t*)&clockModeReport, 5);
 HAL_Delay(100);
 
 // Move 2
@@ -35,7 +35,7 @@ clockModeReport.firstPickupCol = 4;
 clockModeReport.report1.finalPickupRow = 3;
 clockModeReport.report1.finalPickupCol = 4;
 // memcpy(clockModeReport.thirdPickupState, arr4, 8 * 8 * sizeof(arr2[0][0]));
-USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint32_t*)&clockModeReport, 5);
+USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint8_t*)&clockModeReport, 5);
 HAL_Delay(100);
 
 // Move 3
@@ -47,7 +47,7 @@ clockModeReport.firstPickupCol = 6;
 clockModeReport.report1.finalPickupRow = 5;
 clockModeReport.report1.finalPickupCol = 5;
 // memcpy(clockModeReport.thirdPickupState, arr6, 8 * 8 * sizeof(arr2[0][0]));
-USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint32_t*)&clockModeReport, 5);
+USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint8_t*)&clockModeReport, 5);
 
 HAL_Delay(100);
 
@@ -60,7 +60,7 @@ clockModeReport.firstPickupCol = 1;
 clockModeReport.report1.finalPickupRow = 2;
 clockModeReport.report1.finalPickupCol = 2;
 // memcpy(clockModeReport.thirdPickupState, arr8, 8 * 8 * sizeof(arr2[0][0]));
-USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint32_t*)&clockModeReport, 5);
+USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint8_t*)&clockModeReport, 5);
 HAL_Delay(100);
 
 // Move 5
@@ -75,7 +75,7 @@ clockModeReport.report2.secondPickupCol = 5;
 clockModeReport.report2.finalPickupRow = 8;
 clockModeReport.report2.finalPickupCol = 8;
 // memcpy(clockModeReport.thirdPickupState, arr11, 8 * 8 * sizeof(arr2[0][0]));
-USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint32_t*)&clockModeReport, 7);
+USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint8_t*)&clockModeReport, 7);
 
 HAL_Delay(100);
 
@@ -91,7 +91,7 @@ clockModeReport.report2.secondPickupCol = 4;
 clockModeReport.report2.finalPickupRow = 8;
 clockModeReport.report2.finalPickupCol = 8;
 // memcpy(clockModeReport.thirdPickupState, arr14, 8 * 8 * sizeof(arr2[0][0]));
-USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint32_t*)&clockModeReport, 7);
+USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint8_t*)&clockModeReport, 7);
 
 HAL_Delay(100);
 
