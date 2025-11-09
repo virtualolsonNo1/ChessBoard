@@ -186,6 +186,15 @@ __ALIGN_BEGIN static uint8_t CUSTOM_HID_ReportDesc_FS[USBD_CUSTOM_HID_REPORT_DES
   0x95, 0x01,        //   Report Count (1)
   0x09, 0x0B,        //   Usage (0x0B - Error Message)
   0x91, 0x02,        //   Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+  // Frontend Data
+  0x85, 0x07,        //   Report ID (7)
+  0x15, 0x00,        //   Logical Minimum (0)
+  0x25, 0xFF,        //   Logical Maximum (255)
+  0x75, 0x08,        //   Report Size (8 bits)
+  0x95, 0x1,        //   Report Count (32? whatever needed for error state)
+  0x09, 0x0C,        //   Usage (0x0B - Piece Current location, second piece picked up, back to original position, etc)
+  0x81, 0x02,        //   Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+  
   /* USER CODE END 0 */
   0xC0    /*     END_COLLECTION	             */
 };

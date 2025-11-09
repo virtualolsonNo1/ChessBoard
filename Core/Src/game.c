@@ -21,6 +21,7 @@ extern struct ErrorMessage errorMessage;
 extern bool isErrorState;
 extern bool desktopError;
 HIDClockModeReports lightReport;
+HIDFrontendDataReports frontendReport;
 bool isEnPassant = false;
 bool moveIsCastling = false;
 bool waitForCastlingResponse;
@@ -266,7 +267,7 @@ void resetGame(struct GameState* game) {
     HAL_TIM_Base_Stop(&htim5);
     
     // send reset game report to desktop app
-    clockModeReport.reportId = 3;
+    clockModeReport.reportId = RESET_OR_LIGHT_REQUEST_REPORT_ID;
     clockModeReport.report3.reset = 255;
     USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint8_t*)&clockModeReport, 2);
     // osDelay(5);
@@ -300,7 +301,7 @@ bool checkCastling() {
     } else if ((game.previousStateChar[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 'K' && game.previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'R' ) || (game.previousStateChar[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 'k' && game.previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'r' )) {
         // if first pickup is rook and second King, check for castling with desktop app!!!!!!!!!!!!!
         waitForCastlingResponse = true;
-        lightReport.reportId = 3;
+        lightReport.reportId = RESET_OR_LIGHT_REQUEST_REPORT_ID;
         lightReport.report3.reset = clockModeReport.report2.secondPickupRow << 3 | clockModeReport.report2.secondPickupCol;
         USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint8_t*)&lightReport, 2);
         osSemaphoreAcquire(checkCastleSem, osWaitForever);
@@ -342,14 +343,14 @@ void updateMoveShit(struct GameState* game) {
                     
                     if ((game->isWhiteMove && isupper(game->previousStateChar[i][j])) || (!game->isWhiteMove && islower(game->previousStateChar[i][j]))) {
                         game->currentMove->firstPiecePlayersColor = true;
-                        lightReport.reportId = 3;
+                        lightReport.reportId = RESET_OR_LIGHT_REQUEST_REPORT_ID;
                         lightReport.report3.reset = i << 3 | j;
                         USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint8_t*)&lightReport, 2);
                         USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS);
                         
                     } else {
                         game->currentMove->firstPiecePlayersColor = false;
-                        lightReport.reportId = 3;
+                        lightReport.reportId = RESET_OR_LIGHT_REQUEST_REPORT_ID;
                         lightReport.report3.reset = i << 3 | j;
                         USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint8_t*)&lightReport, 2);
                         USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS);
@@ -455,8 +456,13 @@ void updateMoveShit(struct GameState* game) {
                     }
 
                 // if first piece picked up is put back on starting square, turn off lights and reset pickup state accordingly
-                // CARLTODO: ADD IN LOGIC TO SEND THIS INFO TO FRONTEND!!!!!!!!!!!!!!!!!
+                // CARLTODO: MUST ADD IN LOGIC TO SEND THIS INFO TO FRONTEND!!!!!!!!!!!!!!!!!
                 } else if (game->currentBoardState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 1) {
+                    // send frontend data to reset back to no piece pickup state
+                    frontendReport.reportId = FRONTEND_DATA_REPORT_ID;
+                    frontendReport.reportReason = NO_PIECE_PICKUP_FRONTEND_REASON;
+                    USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint8_t*)&frontendReport, 2);
+                    
                     startedPieceCheck = false;
                     game->currentMove->pickupState = NO_PIECE_PICKUP;
                     game->currentMove->receivedLightData = false;
@@ -472,9 +478,6 @@ void updateMoveShit(struct GameState* game) {
                         // Clear any pending interrupt flag
                         NVIC_DisableIRQ(TIM3_IRQn);
                         __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
-                        
-                        // Enable the update interrupt
-                        htim3.Instance->DIER |= TIM_DIER_UIE;
                         
                         __HAL_TIM_SET_COUNTER(&htim3, 1000);
                         // Start the timer
@@ -517,6 +520,11 @@ void updateMoveShit(struct GameState* game) {
                     isEnPassant = false;
                     moveIsCastling = false;
                     // game->currentMove->pieceNewSquare = false;
+                    
+                    // send frontend data to reset back to no piece pickup state
+                    frontendReport.reportId = FRONTEND_DATA_REPORT_ID;
+                    frontendReport.reportReason = NO_PIECE_PICKUP_FRONTEND_REASON;
+                    USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint8_t*)&frontendReport, 2);
 
                     game->currentMove->pickupState = NO_PIECE_PICKUP;
                     lightsOff();
@@ -536,9 +544,6 @@ void updateMoveShit(struct GameState* game) {
                     NVIC_DisableIRQ(TIM3_IRQn);
                     __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
                     
-                    // Enable the update interrupt
-                    htim3.Instance->DIER |= TIM_DIER_UIE;
-                    
                     __HAL_TIM_SET_COUNTER(&htim3, 1000);
                     // Start the timer
                     HAL_TIM_Base_Start(&htim3);
@@ -554,9 +559,6 @@ void updateMoveShit(struct GameState* game) {
                     game->currentMove->pieceNewCol = clockModeReport.firstPickupCol;
                     NVIC_DisableIRQ(TIM3_IRQn);
                     __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
-                    
-                    // Enable the update interrupt
-                    htim3.Instance->DIER |= TIM_DIER_UIE;
                     
                     __HAL_TIM_SET_COUNTER(&htim3, 1000);
                     // Start the timer
@@ -605,14 +607,11 @@ void updateMoveShit(struct GameState* game) {
                         game->currentMove->secondPieceNewCol = secondLightCol;
                         NVIC_DisableIRQ(TIM3_IRQn);
                         __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
-                        // Enable the update interrupt
-                        htim3.Instance->DIER |= TIM_DIER_UIE;
                         __HAL_TIM_SET_COUNTER(&htim3, 1000);
                         // Start the timer
                         HAL_TIM_Base_Start(&htim3);
                         NVIC_EnableIRQ(TIM3_IRQn);
                         startedPieceCheck = true;
-                        volatile int x = 1;
                     }
                 } else if (moveIsCastling && startedPieceCheck && game->timeControl == NO_CLOCK && (game->currentBoardState[game->currentMove->pieceNewRow][game->currentMove->pieceNewCol] == 0 || game->currentBoardState[game->currentMove->secondPieceNewRow][game->currentMove->secondPieceNewCol] == 0)) {
                     // Stop the timer
@@ -628,8 +627,6 @@ void updateMoveShit(struct GameState* game) {
                     // game->currentMove->pieceNewSquare = true;
                     NVIC_DisableIRQ(TIM3_IRQn);
                     __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
-                    // Enable the update interrupt
-                    htim3.Instance->DIER |= TIM_DIER_UIE;
                     __HAL_TIM_SET_COUNTER(&htim3, 1000);
                     // Start the timer
                     HAL_TIM_Base_Start(&htim3);

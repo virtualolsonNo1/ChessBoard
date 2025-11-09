@@ -232,6 +232,9 @@ int main(void)
   //initialize clocks properly, enabling proper interrupts
   TIM2->SR &= ~(TIM_SR_UIF_Msk);
   TIM2->DIER |= 1;
+  
+  TIM3->SR &= ~(TIM_SR_UIF_Msk);
+  TIM3->DIER |= 1;
 
   TIM5->SR &= ~(TIM_SR_UIF_Msk);
   TIM5->DIER |= 1;
@@ -724,6 +727,7 @@ void blinkError(void *argument)
               if (errorMessage.resetState == NO_PIECE_PICKUP) {
                 arrsSame = false;
 
+                // every half second, turn on or turn off so lights link
                 if (count % 2 == 0) {
                   blinkLightsArr[i][j] = 1;
                 } else {
@@ -732,6 +736,8 @@ void blinkError(void *argument)
               } else if (errorMessage.resetState == FIRST_PIECE_PICKUP && !(i == errorMessage.firstPickupRow && j == errorMessage.firstPickupCol)) {
                 if (!(game.currentMove->allPieceLights[i][j] == 1 && game.currentBoardState[i][j] == 1)) {
                 arrsSame = false;
+
+                // every half second, turn on or turn off so lights link
                 if (count % 2 == 0) {
                   blinkLightsArr[i][j] = 1;
                 } else {
@@ -741,6 +747,8 @@ void blinkError(void *argument)
               } else if (errorMessage.resetState == SECOND_PIECE_PICKUP && !(i == clockModeReport.firstPickupRow && j == clockModeReport.firstPickupCol) && !(i == clockModeReport.report2.secondPickupRow && j == clockModeReport.report2.secondPickupCol)) {
                 // TODO: SHOULD TWO LIGHTS FROM PICKUP BLINK OR INDICATE ANYTHING, as rn if two pieces pick up and third picked up, just makes set down third and not all 3
                 arrsSame = false;
+                
+                // every half second, turn on or turn off so lights link
                 if (count % 2 == 0) {
                   blinkLightsArr[i][j] = 1;
                 } else {
@@ -766,6 +774,12 @@ void blinkError(void *argument)
             // need to set pieceNewSquare to false, otherwise, if it was true, won't light up squares first time picking up a piece after this
             game.currentMove->pieceNewSquare = false;
             game.currentMove->pickupState = NO_PIECE_PICKUP;
+
+            // send frontend data to reset back to no piece pickup state
+            HIDFrontendDataReports frontendReport;
+            frontendReport.reportId = FRONTEND_DATA_REPORT_ID;
+            frontendReport.reportReason = NO_PIECE_PICKUP_FRONTEND_REASON;
+            USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint8_t*)&frontendReport, 2);
             
           // if second piece pickup, and game back to all but those two down, light up just those two spots
           } else if (errorMessage.resetState == SECOND_PIECE_PICKUP) {
@@ -885,7 +899,7 @@ void updateMove(void *argument)
       if (!isErrorState) {
         if (game.currentMove->pickupState == SECOND_PIECE_PICKUP) {
           
-          clockModeReport.reportId = 2;
+          clockModeReport.reportId = PIECE_TAKEN_OR_CASTLING_REPORT_ID;
           USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint8_t*)&clockModeReport, 7);
           USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS);
           
@@ -894,7 +908,7 @@ void updateMove(void *argument)
           osSemaphoreAcquire(checkDesktopAppErrSem, osWaitForever);
           // TODO: MAKE SURE THAT THE char state of board always looks right when playing
         } else {
-          clockModeReport.reportId = 1;
+          clockModeReport.reportId = PIECE_MOVED_REPORT_ID;
 
           USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, (uint8_t*)&clockModeReport, 5);
           USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS);

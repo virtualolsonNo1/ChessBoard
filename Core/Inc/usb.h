@@ -1,6 +1,16 @@
 #include <stdint.h>
-#define HID_REPORT1_SIZE 67
-#define HID_REPORT2_SIZE 69
+
+// USB RELATED MACROS
+// Report ID macros
+#define PIECE_MOVED_REPORT_ID 1
+#define PIECE_TAKEN_OR_CASTLING_REPORT_ID 2
+#define RESET_OR_LIGHT_REQUEST_REPORT_ID 3
+#define FRONTEND_DATA_REPORT_ID 7
+
+// Frontend reason macros
+#define NO_PIECE_PICKUP_FRONTEND_REASON 1
+#define PIECE_MOVED_FRONTEND_REASON 2
+#define SECOND_PIECE_PICKED_UP_FRONTEND_REASON 3
 
 typedef struct __attribute__((packed)) {
     uint8_t reportId;
@@ -45,3 +55,20 @@ typedef struct __attribute__((packed)) {
 
     };
 } HIDClockModeReports;
+
+
+typedef struct __attribute__((packed)) {
+    uint8_t reportId;
+    uint8_t reportReason;
+    union {
+        struct __attribute__((packed)) {
+            uint8_t pieceNewRow;
+            uint8_t pieceNewCol;
+        };
+    };
+    uint64_t padding;
+    uint64_t padding2;
+    uint64_t padding3;
+    uint32_t padding4;
+
+} HIDFrontendDataReports;
