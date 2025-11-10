@@ -122,7 +122,7 @@ static void MX_TIM2_Init(void);
 static void MX_TIM5_Init(void);
 static void MX_TIM3_Init(void);
 void blinkError(void *argument);
-void updateTime(void *argument);
+void updateTimeTask(void *argument);
 void updateMove(void *argument);
 void animateLights(void *argument);
 
@@ -132,7 +132,7 @@ void animateLights(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void updateTimeOld() {
+void updateTime() {
     // check for reset right off the bat
     if (game.resetNow) {
         game.resetNow = false;
@@ -310,7 +310,7 @@ int main(void)
   blinkErrorTaskHandle = osThreadNew(blinkError, NULL, &blinkErrorTask_attributes);
 
   /* creation of updateTimeTask */
-  updateTimeTaskHandle = osThreadNew(updateTime, NULL, &updateTimeTask_attributes);
+  updateTimeTaskHandle = osThreadNew(updateTimeTask, NULL, &updateTimeTask_attributes);
 
   /* creation of updateMoveTask */
   updateMoveTaskHandle = osThreadNew(updateMove, NULL, &updateMoveTask_attributes);
@@ -654,6 +654,18 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void readHallSensorData() {
+      //de-assert and re-assert load pin to load values into register's D flip flops
+      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
+      osDelay(1);
+      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
+
+      //transmit MISO data from shift registers into boardstate buffer
+      HAL_SPI_Receive(&hspi1, (uint8_t *)boardstate, 8, 100000);
+
+      //turn received boardstate into 2d array instead of 1d array of uint8_t's
+      while((SPI1->SR & 0b1)) {}
+}
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_blinkError */
@@ -688,16 +700,7 @@ void blinkError(void *argument)
           break;
       }
       
-      //de-assert and re-assert load pin to load values into register's D flip flops
-      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
-      osDelay(1);
-      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
-
-      //transmit MISO data from shift registers into boardstate buffer
-      HAL_SPI_Receive(&hspi1, (uint8_t *)boardstate, 8, 100000);
-
-      //turn received boardstate into 2d array instead of 1d array of uint8_t's
-      while((SPI1->SR & 0b1)) {}
+      readHallSensorData();
       
       //constantly store state of board in game struct so can be used when button is pressed
       for(int i = 0; i < 8; i++) {
@@ -815,7 +818,7 @@ void blinkError(void *argument)
 * @retval None
 */
 /* USER CODE END Header_updateTime */
-void updateTime(void *argument)
+void updateTimeTask(void *argument)
 {
   /* USER CODE BEGIN updateTime */
   /* Infinite loop */
@@ -830,7 +833,7 @@ void updateTime(void *argument)
       osDelay(1);
       continue;
     }
-    updateTimeOld();
+    updateTime();
     osDelay(1);
   }
   /* USER CODE END updateTime */
@@ -855,18 +858,9 @@ void updateMove(void *argument)
       osThreadSuspend(updateMoveTaskHandle);
     }
     
-    //de-assert and re-assert load pin to load values into register's D flip flops
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
-    osDelay(1);
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
-
-    //transmit MISO data from shift registers into boardstate buffer
-    HAL_SPI_Receive(&hspi1, (uint8_t *)boardstate, 8, 100000);
-
-    //turn received boardstate into 2d array instead of 1d array of uint8_t's
-    while((SPI1->SR & 0b1)) {}
+    readHallSensorData();
     
-    //constatntly store state of board in game so can be used when button is pressed
+    // convert boardstate 1d, 8 byte array to 8x8 2D array of 1's and 0's
     for(int i = 0; i < 8; i++) {
       game.currentBoardState[i][0] = (0b10000000 & ~boardstate[i]) >> 7; 
       game.currentBoardState[i][1] = (0b01000000 & ~boardstate[i]) >> 6; 
@@ -979,8 +973,9 @@ void updateMove(void *argument)
         game.isWhiteMove = false;
     }
     
-    // reset clockModeReport and game's current move to prepare for next move
-    if (clockModeReport.reportId == 2) {
+    // TODO: IS THIS NECESSARY?????
+    // reset final pickup to invalid values before next move
+    if (clockModeReport.reportId == PIECE_TAKEN_OR_CASTLING_REPORT_ID) {
       clockModeReport.report2.finalPickupRow = 8;
       clockModeReport.report2.finalPickupCol = 8;
     } else {
