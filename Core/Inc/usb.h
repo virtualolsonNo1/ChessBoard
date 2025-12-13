@@ -9,7 +9,7 @@
 
 // Frontend reason macros
 #define NO_PIECE_PICKUP_FRONTEND_REASON 1
-#define PIECE_MOVED_FRONTEND_REASON 2
+#define PIECE_MOVING_FRONTEND_REASON 2
 #define SECOND_PIECE_PICKED_UP_FRONTEND_REASON 3
 
 typedef struct __attribute__((packed)) {

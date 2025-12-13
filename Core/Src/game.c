@@ -280,6 +280,9 @@ void resetGame(struct GameState* game) {
     game->currentMove->pickupState = NO_PIECE_PICKUP;
     game->currentMove->isFinalState = false;
     game->currentMove->pieceNewSquare = false;
+    game->currentMove->pieceNewRow = 0xFF;
+    game->currentMove->pieceNewCol = 0xFF;
+    
     game->piecesReady = false;
     
     return;
@@ -399,6 +402,9 @@ void updateMoveShit(struct GameState* game) {
                     clockModeReport.report2.finalPickupCol = 8;
                     clockModeReport.report2.finalPickupRow = 8;
                     game->currentMove->pickupState = SECOND_PIECE_PICKUP;
+                    game->currentMove->pieceNewSquare = false;
+                    game->currentMove->pieceNewRow = 0xFF;
+                    game->currentMove->pieceNewCol = 0xFF;
                     
                     // TODO: I think this code is redundant, as won't enter final state otherwise, but keeping nonetheless
                     if (startedPieceCheck && game->timeControl == NO_CLOCK) {
@@ -484,13 +490,16 @@ void updateMoveShit(struct GameState* game) {
                     // send frontend data to reset back to no piece pickup state
                     frontendReport.reportId = FRONTEND_DATA_REPORT_ID;
                     frontendReport.reportReason = NO_PIECE_PICKUP_FRONTEND_REASON;
-                    USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint8_t*)&frontendReport, 2);
+                    USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint8_t*)&frontendReport, 4);
                     
                     startedPieceCheck = false;
                     game->currentMove->pickupState = NO_PIECE_PICKUP;
                     game->currentMove->receivedLightData = false;
                     game->currentMove->lightsOn = false;
                     game->currentMove->pieceNewSquare = false;
+                    game->currentMove->pieceNewRow = 0xFF;
+                    game->currentMove->pieceNewCol = 0xFF;
+                    
                     lightsOff();
                     return;
 
@@ -504,6 +513,17 @@ void updateMoveShit(struct GameState* game) {
                     } else if (startedPieceCheck && game->timeControl == NO_CLOCK && game->currentBoardState[game->currentMove->pieceNewRow][game->currentMove->pieceNewCol] == 0) {
                         stopNoClockMoveCheck();
                     }
+                    
+
+                    // if piece on new square than for current lights (either just picked up, or new square from where slid to), update frontend lights
+                    if (!(game->currentMove->pieceNewRow == i && game->currentMove->pieceNewCol == j)) {
+                        frontendReport.reportId = FRONTEND_DATA_REPORT_ID;
+                        frontendReport.reportReason = PIECE_MOVING_FRONTEND_REASON;
+                        frontendReport.pieceNewRow = i;
+                        frontendReport.pieceNewCol = j;
+                        USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint8_t*)&frontendReport, 4);
+                    }
+                    
                     game->currentMove->pieceNewSquare = true;
                     game->currentMove->pieceNewRow = i;
                     game->currentMove->pieceNewCol = j;
@@ -512,6 +532,8 @@ void updateMoveShit(struct GameState* game) {
                     game->currentMove->lightState[i][j] = 1;
                     game->currentMove->lightsOn = true;
                     updateLights();
+                    
+                    
 
                 // first piece picked up was opponent's to take, and second piece is a valid one that is the player's piece
                 } else if (game->currentMove->pieceNewSquare && game->currentBoardState[game->currentMove->pieceNewRow][game->currentMove->pieceNewCol]) {
@@ -530,7 +552,7 @@ void updateMoveShit(struct GameState* game) {
                     // send frontend data to reset back to no piece pickup state
                     frontendReport.reportId = FRONTEND_DATA_REPORT_ID;
                     frontendReport.reportReason = NO_PIECE_PICKUP_FRONTEND_REASON;
-                    USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint8_t*)&frontendReport, 2);
+                    USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint8_t*)&frontendReport, 4);
 
                     game->currentMove->pickupState = NO_PIECE_PICKUP;
                     lightsOff();

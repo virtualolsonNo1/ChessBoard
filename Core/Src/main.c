@@ -776,13 +776,16 @@ void blinkError(void *argument)
             moveIsCastling = false;
             // need to set pieceNewSquare to false, otherwise, if it was true, won't light up squares first time picking up a piece after this
             game.currentMove->pieceNewSquare = false;
+            game.currentMove->pieceNewRow = 0xFF;
+            game.currentMove->pieceNewCol = 0xFF;
+
             game.currentMove->pickupState = NO_PIECE_PICKUP;
 
             // send frontend data to reset back to no piece pickup state
             HIDFrontendDataReports frontendReport;
             frontendReport.reportId = FRONTEND_DATA_REPORT_ID;
             frontendReport.reportReason = NO_PIECE_PICKUP_FRONTEND_REASON;
-            USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint8_t*)&frontendReport, 2);
+            USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint8_t*)&frontendReport, 4);
             
           // if second piece pickup, and game back to all but those two down, light up just those two spots
           } else if (errorMessage.resetState == SECOND_PIECE_PICKUP) {
@@ -989,6 +992,8 @@ void updateMove(void *argument)
     game.currentMove->isFinalState = false;
     game.currentMove->lightsOn = false;
     game.currentMove->pieceNewSquare = false;
+    game.currentMove->pieceNewRow = 0xFF;
+    game.currentMove->pieceNewCol = 0xFF;
     game.currentMove->receivedLightData = false;
     isEnPassant = false;
     moveIsCastling = false;
