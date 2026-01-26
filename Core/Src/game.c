@@ -39,6 +39,18 @@ void rotate8x8Array(uint8_t rotateArr[8][8]) {
       }
     }
 }
+
+void rotate8Array(uint8_t rotateArr[8]) {
+    uint8_t temp[8];
+    memcpy(temp, rotateArr, 8);
+    memset(rotateArr, 0, 8);
+    for(int i = 0; i < 8; i++) {
+      for(int j = 0; j < 8; j++) {
+        rotateArr[7 - i] |= ((temp[i] >> j) & 0x1) << (7 - j);
+      }
+    }
+}
+
 void initTime(struct GameState* game) {
     //initialize the display with the starting time for both players
     max7219_PrintNtos(PLAYER1_MINUTES, game->player1->clock.minutes, 2);
@@ -416,6 +428,12 @@ void updateMoveShit(struct GameState* game) {
                         memset(game->currentMove->lightState, 0, 64);
                         game->currentMove->lightState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] = 1;
                         game->currentMove->lightState[i][j] = 1;
+
+                        frontendReport.reportId = FRONTEND_DATA_REPORT_ID;
+                        frontendReport.reportReason = SECOND_PIECE_PICKED_UP_FRONTEND_REASON;
+                        frontendReport.secondPieceRow = i;
+                        frontendReport.secondPieceCol = j;
+                        USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint8_t*)&frontendReport, 4);
                         
                         // If en passant, light up final square for piece taking to land on as well as initial square for that piece
                         if ((game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'P' && game->previousStateChar[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 'p' && clockModeReport.firstPickupRow == clockModeReport.report2.secondPickupRow) || (game->previousStateChar[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 'p' && game->previousStateChar[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] == 'P' && clockModeReport.firstPickupRow == clockModeReport.report2.secondPickupRow)) {
@@ -471,6 +489,12 @@ void updateMoveShit(struct GameState* game) {
                             game->currentMove->lightsOn = true;
                             updateLights();
 
+                            frontendReport.reportId = FRONTEND_DATA_REPORT_ID;
+                            frontendReport.reportReason = SECOND_PIECE_PICKED_UP_FRONTEND_REASON;
+                            frontendReport.secondPieceRow = i;
+                            frontendReport.secondPieceCol = j;
+                            USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint8_t*)&frontendReport, 4);
+
                         // if second move is not possible given first piece picked up, blink error!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                         } else {
                             // set isErrorState to true so update move thread can suspend itself later and start blink error task
@@ -485,7 +509,6 @@ void updateMoveShit(struct GameState* game) {
                     }
 
                 // if first piece picked up is put back on starting square, turn off lights and reset pickup state accordingly
-                // CARLTODO: MUST ADD IN LOGIC TO SEND THIS INFO TO FRONTEND!!!!!!!!!!!!!!!!!
                 } else if (game->currentBoardState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] == 1) {
                     // send frontend data to reset back to no piece pickup state
                     frontendReport.reportId = FRONTEND_DATA_REPORT_ID;

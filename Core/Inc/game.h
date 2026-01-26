@@ -113,6 +113,7 @@ struct GameState {
 };
 
 void rotate8x8Array(uint8_t rotateArr[8][8]);
+void rotate8Array(uint8_t rotateArr[8]);
 void initTime(struct GameState* game);
 void changeTimeControl(struct GameState* game);
 void updateMoveShit(struct GameState* game);

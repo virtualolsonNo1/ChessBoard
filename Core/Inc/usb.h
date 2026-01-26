@@ -6,6 +6,7 @@
 #define PIECE_TAKEN_OR_CASTLING_REPORT_ID 2
 #define RESET_OR_LIGHT_REQUEST_REPORT_ID 3
 #define FRONTEND_DATA_REPORT_ID 7
+#define FRONTEND_DATA_ERROR_REPORT_ID 8
 
 // Frontend reason macros
 #define NO_PIECE_PICKUP_FRONTEND_REASON 1
@@ -65,6 +66,10 @@ typedef struct __attribute__((packed)) {
             uint8_t pieceNewRow;
             uint8_t pieceNewCol;
         };
+        struct __attribute__((packed)) {
+            uint8_t secondPieceRow;
+            uint8_t secondPieceCol;
+        };
     };
     uint64_t padding;
     uint64_t padding2;
@@ -72,3 +77,8 @@ typedef struct __attribute__((packed)) {
     uint32_t padding4;
 
 } HIDFrontendDataReports;
+
+typedef struct __attribute__((packed)) {
+    uint8_t reportId;
+    uint8_t errorLights[8];
+} HIDFrontendDataErrorReport;

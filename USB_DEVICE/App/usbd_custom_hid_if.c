@@ -162,10 +162,10 @@ __ALIGN_BEGIN static uint8_t CUSTOM_HID_ReportDesc_FS[USBD_CUSTOM_HID_REPORT_DES
   0x95, 0x01,        //   Report Count (1)
   0x09, 0x08,        //   Usage (0x08 - resetGame)
   0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
-  // Report ID 4: 8-byte array for light status (Input)
+  // Report ID 4: 8-byte array for light status (Output)
   0x85, 0x04,        //   Report ID (4)
   0x15, 0x00,        //   Logical Minimum (0)
-  0x25, 0x01,        //   Logical Maximum (1)
+  0x25, 0xFF,        //   Logical Maximum (255)
   0x75, 0x08,        //   Report Size (8 bits)
   0x95, 0x08,        //   Report Count (8)
   0x09, 0x09,        //   Usage (0x09 - Light Status)
@@ -192,8 +192,16 @@ __ALIGN_BEGIN static uint8_t CUSTOM_HID_ReportDesc_FS[USBD_CUSTOM_HID_REPORT_DES
   0x25, 0xFF,        //   Logical Maximum (255)
   0x75, 0x08,        //   Report Size (8 bits)
   0x95, 0x3,        //   Report Count (32? whatever needed for error state)
-  0x09, 0x0C,        //   Usage (0x0B - Piece Current location, second piece picked up, back to original position, etc)
-  0x81, 0x02,        //   Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+  0x09, 0x0C,        //   Usage (0x0C - Piece Current location, second piece picked up, back to original position, etc)
+  0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+  // Frontend Data Error State
+  0x85, 0x08,        //   Report ID (8)
+  0x15, 0x00,        //   Logical Minimum (0)
+  0x25, 0xFF,        //   Logical Maximum (255)
+  0x75, 0x08,        //   Report Size (8 bits)
+  0x95, 0x8,        //   Report Count (8)
+  0x09, 0x0D,        //   Usage (0x0D - locations of error pieces)
+  0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
   
   /* USER CODE END 0 */
   0xC0    /*     END_COLLECTION	             */

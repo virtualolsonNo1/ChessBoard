@@ -718,6 +718,8 @@ void blinkError(void *argument)
       // rotate array to match normal orientation if top is white
       if (game.gameStarted && !game.player1IsWhite) {
         rotate8x8Array(game.currentBoardState);
+        // rotate 8 byte boardstate for error lights for frontend
+        rotate8Array(boardstate);
       }
       
       memset(blinkLightsArr, 0, 64);
@@ -795,11 +797,25 @@ void blinkError(void *argument)
             game.currentMove->lightState[clockModeReport.firstPickupRow][clockModeReport.firstPickupCol] = 1;
             game.currentMove->lightState[clockModeReport.report2.secondPickupRow][clockModeReport.report2.secondPickupCol] = 1;
             updateLights();
+
+            // send frontend data to reset back to no piece pickup state
+            HIDFrontendDataReports frontendReport;
+            frontendReport.reportId = FRONTEND_DATA_REPORT_ID;
+            frontendReport.reportReason = SECOND_PIECE_PICKED_UP_FRONTEND_REASON;
+            frontendReport.secondPieceRow = clockModeReport.report2.secondPickupRow;
+            frontendReport.secondPieceCol = clockModeReport.report2.secondPickupCol;
+            USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint8_t*)&frontendReport, 4);
           }
           
           break;
 
         } else {
+
+          // send lights data for error state
+          HIDFrontendDataErrorReport frontendErrorReport;
+          frontendErrorReport.reportId = FRONTEND_DATA_ERROR_REPORT_ID;
+          memcpy(frontendErrorReport.errorLights, boardstate, 8);
+          USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint8_t*)&frontendErrorReport, 9);
           memcpy(game.currentMove->lightState, blinkLightsArr, 64);
           updateLights();
           count++;
